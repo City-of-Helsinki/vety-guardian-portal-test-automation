@@ -1,0 +1,43 @@
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm
+.eslintcache
+
+# Playwright
+test-results/
+playwright-report/
+playwright/.cache/
+/blob-report/
+/playwright/.auth/
+*.trace
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment variables
+.env
+.env.local
+
+# Logs
+*.log
+
+# Project specific
+*.db
+*.sqlite3
+downloads/
+playwright.yml
+
+# Cursor IDE
+.cursor/
