@@ -1,11 +1,13 @@
 import { test, expect } from '@playwright/test';
 import { LanguageSelector } from '../components/LanguageSelector';
 import { PreschoolEnrollmentPage } from '../components/PreschoolEnrollmentPage';
+import { clearPreschoolApplications } from '../utils/db';
 
 test.describe('Preschool enrollment', () => {
   let enrollmentPage;
 
   test.beforeEach(async ({ page }) => {
+    clearPreschoolApplications();
     enrollmentPage = new PreschoolEnrollmentPage(page);
     const languageSelector = new LanguageSelector(page);
     await page.goto('/application');
