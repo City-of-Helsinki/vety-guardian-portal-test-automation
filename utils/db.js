@@ -8,7 +8,8 @@ const backendDir =
 
 /**
  * Deletes all rows from the PreschoolApplication table using the backend's
- * management command. Backend must be running with DEBUG=True.
+ * management command. The command only runs when the backend's DEBUG
+ * setting (from its .env) is True.
  *
  * Clears the whole table, so call it only after a test that sends an
  * application has verified it, and run those tests in serial mode.
