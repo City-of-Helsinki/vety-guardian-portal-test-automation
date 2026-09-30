@@ -11,8 +11,8 @@ const backendDir =
  * management command. The command only runs when the backend's DEBUG
  * setting (from its .env) is True.
  *
- * Clears the whole table, so call it only after a test that sends an
- * application has verified it, and run those tests in serial mode.
+ * Clears the whole table, including drafts saved by other tests, so run the
+ * tests that use it one at a time (see tests/enrollment.spec.js).
  */
 export function clearPreschoolApplications() {
   let output;

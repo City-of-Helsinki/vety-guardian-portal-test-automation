@@ -1,19 +1,23 @@
 import { test, expect } from '@playwright/test';
 import { LanguageSelector } from '../components/LanguageSelector';
-import { loginPage } from '../test-data/loginPage';
-
-const selectors = require("../test-data/selectors");
+import { LoginPage } from '../components/LoginPage';
+import { LandingPage } from '../components/LandingPage';
+import { users } from '../test-data/users';
 
 test.describe("HKI-Vety Guardian Portal Landing Page", () => {
+  let loginPage;
+  let landingPage;
+
   test.beforeEach(async ({ page }) => {
     const languageSelector = new LanguageSelector(page);
-    await page.goto(selectors.mainPagePath);
+    loginPage = new LoginPage(page);
+    landingPage = new LandingPage(page);
+    await loginPage.open();
     await languageSelector.select('fi');  // By default goes to english language regardless of locale
   });
 
   test("Landing page: Check elements", async ({ page }) => {
-    // Login is just a login button for now. Add user/password later.
-    await page.getByRole('link', { name: loginPage.loginButton.fi }).click();
+    await loginPage.loginAs(users.parent);
 
     const languageSelector = new LanguageSelector(page);
 
@@ -22,7 +26,7 @@ test.describe("HKI-Vety Guardian Portal Landing Page", () => {
     });
 
     await test.step("Check landing page heading", async () => {
-      await expect(page.getByRole('heading', { level: 1 })).toHaveText('landing.title');
+      await expect(landingPage.heading).toHaveText('landing.title');
     });
 
     await test.step("Check landing page header", async () => {
@@ -34,15 +38,19 @@ test.describe("HKI-Vety Guardian Portal Landing Page", () => {
     });
   });
 
-  test("Landing page: Check child with enroll enabled", async ({ page }) => {
-    await page.getByRole('link', { name: loginPage.loginButton.fi }).click();  // user 1 (2/3 children eligible)
-
-    await test.step("Check child details", async () => {
-      // Now hardcoded children, and no data-testids. Let's just pick one for now.
-      await page.getByRole('link', { name: 'landing.applicationLink' }).first().click();
-      await expect(page.getByRole('heading', { level: 1 })).toHaveText('Esiopetukseen ilmoittautuminen');
-    });
+  test("Landing page: Guardian with two children", async () => {
+    await loginPage.loginAs(users.parent);
+    await landingPage.expectChildren(users.parent.children);
   });
 
+  test("Landing page: Guardian with one child", async () => {
+    await loginPage.loginAs(users.otherParent);
+    await landingPage.expectChildren(users.otherParent.children);
+  });
 
+  test("Landing page: Guardian with turvakielto", async () => {
+    await loginPage.loginAs(users.protectedPerson);
+    await landingPage.expectSecurityNotificationVisible();
+    await landingPage.expectChildren([]);
+  });
 });
