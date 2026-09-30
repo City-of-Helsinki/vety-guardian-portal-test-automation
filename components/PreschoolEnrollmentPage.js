@@ -51,8 +51,10 @@ export class PreschoolEnrollmentPage {
 
     // Step 3 - Täydentävä varhaiskasvatus
 
-    this.extendedCareHeading = page.getByRole('heading', {
+    // Step 3 h2 is the same as in steps 4 and 5, so use the radio group label
+    this.extendedCareHeading = page.getByRole('group', {
       name: 'Täydentävän varhaiskasvatuksen tarve',
+      exact: true,
     });
 
     this.needsExtendedCareRadio = page.getByTestId('rb-extended-care');
@@ -62,7 +64,7 @@ export class PreschoolEnrollmentPage {
 
     // Step 4 - Aloituspäivä ja hoidon tarve
     this.startAndCareNeedHeading = page.getByRole('heading', {
-      name: 'Aloituspäivä ja varhaiskasvatuksen tarve',
+      name: 'Täydentävän varhaiskasvatuksen tarve ja aloituspäivä',
       exact: true,
     });
 
@@ -147,6 +149,50 @@ export class PreschoolEnrollmentPage {
 
     this.specialSupportCheckbox = page.getByTestId('cb-erityinen-tuki');
     this.medicationNeedCheckbox = page.getByTestId('cb-laakehoidon-tarve');
+
+    // Step 7 - Yhteystiedot
+
+    this.contactInfoHeading = page.getByRole('heading', {
+      name: 'Yhteystiedot',
+      exact: true,
+    });
+
+    const guardianEmailGroup = page.getByRole('group', {
+      name: 'Huoltajan sähköpostiosoite',
+      exact: true,
+    });
+    const otherGuardianEmailGroup = page.getByRole('group', {
+      name: 'Toisen huoltajan sähköpostiosoite',
+      exact: true,
+    });
+
+    this.guardianEmailInput = guardianEmailGroup.getByRole('textbox', {
+      name: 'Sähköpostiosoite',
+      exact: true,
+    });
+    this.guardianEmailConfirmInput = guardianEmailGroup.getByRole('textbox', {
+      name: 'Sähköpostiosoite uudestaan',
+      exact: true,
+    });
+    this.otherGuardianEmailInput = otherGuardianEmailGroup.getByRole('textbox', {
+      name: 'Sähköpostiosoite',
+      exact: true,
+    });
+    this.otherGuardianEmailConfirmInput = otherGuardianEmailGroup.getByRole('textbox', {
+      name: 'Sähköpostiosoite uudestaan',
+      exact: true,
+    });
+
+    // Step 8 - Esikatselu ja lähettäminen
+
+    this.previewHeading = page.getByRole('heading', {
+      name: 'Esikatselu ja lähettäminen',
+      exact: true,
+    });
+
+    this.sendApplicationButton = page.getByRole('button', {
+      name: 'Lähetä hakemus',
+    });
   }
 
   // Generic methods //////////////////////////////////////////
@@ -382,6 +428,30 @@ export class PreschoolEnrollmentPage {
     await expect(this.medicationNeedCheckbox).not.toBeChecked();
   }
 
+  // Step 7 /////////////////////////////////////////////////////
+  async verifyContactInfoStepVisible() {
+    await expect(this.contactInfoHeading).toBeVisible();
+  }
+
+  async fillGuardianEmail(email) {
+    await this.guardianEmailInput.fill(email);
+    await this.guardianEmailConfirmInput.fill(email);
+  }
+
+  async fillOtherGuardianEmail(email) {
+    await this.otherGuardianEmailInput.fill(email);
+    await this.otherGuardianEmailConfirmInput.fill(email);
+  }
+
+  // Step 8 /////////////////////////////////////////////////////
+  async verifyPreviewStepVisible() {
+    await expect(this.previewHeading).toBeVisible();
+  }
+
+  async sendApplication() {
+    await this.sendApplicationButton.click();
+  }
+
   // Step helpers ///////////////////////////////////////////////
   async completeStep1() {
     await this.clickNext();
@@ -419,6 +489,19 @@ export class PreschoolEnrollmentPage {
 
     await this.setDaytimeCareWeekdayAbsenceDays(2);
 
+    await this.clickNext();
+  }
+
+  async completeStep6() {
+    await this.completeStep5();
+
+    await this.clickNext();
+  }
+
+  async completeStep7() {
+    await this.completeStep6();
+
+    await this.fillGuardianEmail('test@example.com');
     await this.clickNext();
   }
 

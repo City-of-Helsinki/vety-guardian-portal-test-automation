@@ -1,6 +1,8 @@
 import { test, expect } from '@playwright/test';
 import { LanguageSelector } from '../components/LanguageSelector';
+import { LoginPage } from '../components/LoginPage';
 import { loginPage } from '../test-data/loginPage';
+import { users } from '../test-data/users';
 
 const selectors = require("../test-data/selectors");
 
@@ -21,8 +23,15 @@ test.describe("HKI-Vety Guardian Portal Login Page", () => {
       await expect(page.getByRole('heading', { level: 1 })).toHaveText(loginPage.heading.fi);
     });
 
-    await test.step("Check login button", async () => {
-      await page.getByRole('link', { name: loginPage.loginButton.fi }).click();
+    await test.step("Check login buttons", async () => {
+      const login = new LoginPage(page);
+      for (const user of Object.values(users)) {
+        await expect(login.loginButton(user)).toBeVisible();
+      }
+    });
+
+    await test.step("Check login", async () => {
+      await new LoginPage(page).loginAs(users.parent);
       await expect(page.getByRole('heading', { level: 1 })).toHaveText('landing.title');
     });
   });

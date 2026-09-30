@@ -1,15 +1,34 @@
 import { test, expect } from '@playwright/test';
 import { LanguageSelector } from '../components/LanguageSelector';
+import { LoginPage } from '../components/LoginPage';
+import { LandingPage } from '../components/LandingPage';
 import { PreschoolEnrollmentPage } from '../components/PreschoolEnrollmentPage';
+import { users } from '../test-data/users';
+import { clearPreschoolApplications } from '../utils/db';
+
+// Child used only by these tests
+const guardian = users.parent;
+const child = 'OtherChild Example';
 
 test.describe('Preschool enrollment', () => {
+  // Every step saves the form to backend, so run the tests one at a time
+  // and start each one from an empty application table
+  test.describe.configure({ mode: 'default' });
+
   let enrollmentPage;
 
   test.beforeEach(async ({ page }) => {
-    enrollmentPage = new PreschoolEnrollmentPage(page);
+    clearPreschoolApplications();
+
+    const loginPage = new LoginPage(page);
+    const landingPage = new LandingPage(page);
     const languageSelector = new LanguageSelector(page);
-    await page.goto('/application');
+    enrollmentPage = new PreschoolEnrollmentPage(page);
+
+    await loginPage.open();
     await languageSelector.select('fi');  // By default goes to english language regardless of locale
+    await loginPage.loginAs(guardian);
+    await landingPage.openApplication(child);
   });
 
   test('loads enrollment page', async () => {
