@@ -183,29 +183,70 @@ export class PreschoolEnrollmentPage {
       exact: true,
     });
 
-    // Step 8 - Esikatselu ja lähettäminen
+    // Step 8 - Esikatselu ja lähetys
 
     this.previewHeading = page.getByRole('heading', {
-      name: 'Esikatselu ja lähettäminen',
+      name: 'Esikatselu ja lähetys',
       exact: true,
     });
 
     this.sendApplicationButton = page.getByRole('button', {
       name: 'Lähetä hakemus',
     });
+
+    // Shown instead of the form when the application has already been sent
+    this.alreadySubmittedNotice = page.getByRole('heading', {
+      name: 'esikatselu.alreadySubmitted',
+    });
+
+    this.childInfoSection = page.locator('section').filter({
+      has: page.getByRole('heading', { name: 'Lapsen tiedot', exact: true }),
+    });
+    this.guardianInfoSection = page.locator('section').filter({
+      has: page.getByRole('heading', { name: 'Huoltajan tiedot', exact: true }),
+    });
+
+    // Labels of the preview values. No data-testids yet and labels are still
+    // translation keys, so update these when the texts are added.
+    this.previewLabels = {
+      childName: 'esikatselu.lapsenNimi',
+      childSsn: 'esikatselu.henkilotunnus',
+      childBirthYear: 'esikatselu.syntymavuosi',
+      childAddress: 'esikatselu.karttaosoite',
+      guardianName: 'esikatselu.huoltajanNimi',
+      guardianAddress: 'esikatselu.osoite',
+      guardianPhone: 'esikatselu.puhelinnumero',
+      guardianEmail: 'esikatselu.sahkoposti',
+    };
   }
 
   // Generic methods //////////////////////////////////////////
+  // Application id from the url /application/<id>
+  applicationId() {
+    return new URL(this.page.url()).pathname.split('/').pop();
+  }
+
   async verifyPageLoaded() {
     await expect(this.pageHeading).toBeVisible();
   }
 
+  // Each step is saved to backend before the next one opens, so wait for the
+  // step to change before continuing
   async clickNext() {
+    const step = await this.currentStep.getAttribute('aria-label');
+    await this.nextButton.click();
+    await expect(this.currentStep, 'Next step should open').not.toHaveAttribute('aria-label', step);
+  }
+
+  // For validation tests: click next when the step should not change
+  async clickNextExpectingError() {
     await this.nextButton.click();
   }
 
   async clickPrevious() {
+    const step = await this.currentStep.getAttribute('aria-label');
     await this.previousButton.click();
+    await expect(this.currentStep, 'Previous step should open').not.toHaveAttribute('aria-label', step);
   }
 
 //  async selectRadioByTestId(testId) {
@@ -262,6 +303,10 @@ export class PreschoolEnrollmentPage {
 
   async uncheckPrivatePreschoolApplication() {
     await this.privatePreschoolCheckbox.uncheck();
+  }
+
+  async verifyPrivatePreschoolApplicationChecked() {
+    await expect(this.privatePreschoolCheckbox).toBeChecked();
   }
 
   async openAddressChangeAccordion() {
@@ -327,6 +372,11 @@ export class PreschoolEnrollmentPage {
     await this.extendedCareStartDate.fill(date);
   }
 
+  // Date is shown without leading zeros, e.g. '1.8.2027'
+  async verifyExtendedCareStartDate(date) {
+    await expect(this.extendedCareStartDate).toHaveValue(date);
+  }
+
   async openDatePicker() {
     await this.openDatePickerButton.click();
   }
@@ -364,6 +414,12 @@ export class PreschoolEnrollmentPage {
 
   async setDaytimeCareWeekdayAbsenceDays(days) {
     await this.step5.daytimeCare.weekdayAbsenceDaysInput.fill(
+      String(days)
+    );
+  }
+
+  async verifyDaytimeCareWeekdayAbsenceDays(days) {
+    await expect(this.step5.daytimeCare.weekdayAbsenceDaysInput).toHaveValue(
       String(days)
     );
   }
@@ -443,9 +499,41 @@ export class PreschoolEnrollmentPage {
     await this.otherGuardianEmailConfirmInput.fill(email);
   }
 
+  async verifyGuardianEmail(email) {
+    await expect(this.guardianEmailInput).toHaveValue(email);
+    await expect(this.guardianEmailConfirmInput).toHaveValue(email);
+  }
+
+  async verifyOtherGuardianEmail(email) {
+    await expect(this.otherGuardianEmailInput).toHaveValue(email);
+    await expect(this.otherGuardianEmailConfirmInput).toHaveValue(email);
+  }
+
+  // Error messages are linked to the input with aria-describedby. Error texts
+  // are not final yet, so only check that there is one.
+  async verifyGuardianEmailHasError() {
+    await expect(this.guardianEmailInput).toHaveAccessibleDescription(/\S/);
+  }
+
+  async verifyGuardianEmailConfirmHasError() {
+    await expect(this.guardianEmailConfirmInput).toHaveAccessibleDescription(/\S/);
+  }
+
   // Step 8 /////////////////////////////////////////////////////
   async verifyPreviewStepVisible() {
     await expect(this.previewHeading).toBeVisible();
+  }
+
+  // section: this.childInfoSection or this.guardianInfoSection
+  // field: key of this.previewLabels, e.g. 'childName'
+  previewValue(section, field) {
+    return section
+      .locator('[class*="label-value"]')
+      .filter({
+        has: this.page.getByText(this.previewLabels[field], { exact: true }),
+      })
+      .locator('span')
+      .last();
   }
 
   async sendApplication() {
@@ -498,10 +586,10 @@ export class PreschoolEnrollmentPage {
     await this.clickNext();
   }
 
-  async completeStep7() {
+  async completeStep7(guardianEmail = 'test@example.com') {
     await this.completeStep6();
 
-    await this.fillGuardianEmail('test@example.com');
+    await this.fillGuardianEmail(guardianEmail);
     await this.clickNext();
   }
 
