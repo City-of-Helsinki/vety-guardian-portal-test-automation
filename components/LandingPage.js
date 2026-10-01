@@ -32,6 +32,15 @@ export class LandingPage {
     await expect(this.page).toHaveURL(/\/application\/[^/]+$/);
   }
 
+  // Returns the birth date shown on the child's card, e.g. '1.2.2016'
+  async childBirthDate(childName) {
+    const ageText = await this.child(childName)
+      .locator('[class*="age-text"]')
+      .textContent();
+
+    return ageText.split(' - ')[0].trim();
+  }
+
   async expectChildren(childNames) {
     await expect(this.childNames).toHaveText(childNames);
   }

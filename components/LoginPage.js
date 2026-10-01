@@ -19,6 +19,13 @@ export class LoginPage {
     await this.page.goto('/');
   }
 
+  async verifyPageLoaded() {
+    await expect(this.page).toHaveURL(/\/$/);
+    await expect(
+      this.page.getByRole('button', { name: /^Login: / }).first()
+    ).toBeVisible();
+  }
+
   async loginAs(user) {
     await this.loginButton(user).click();
     await expect(this.page).toHaveURL(/\/landing$/);
