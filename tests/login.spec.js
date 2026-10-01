@@ -9,8 +9,6 @@ const selectors = require("../test-data/selectors");
 test.describe("HKI-Vety Guardian Portal Login Page", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto(selectors.mainPagePath);
-    const languageSelector = new LanguageSelector(page);
-    await languageSelector.select('fi');  // By default goes to english language regardless of locale
   });
   
   test("Login page: Check elements", async ({ page }) => {
