@@ -4,12 +4,15 @@ import { LoginPage } from '../components/LoginPage';
 import { LandingPage } from '../components/LandingPage';
 import { PreschoolEnrollmentPage } from '../components/PreschoolEnrollmentPage';
 import { users } from '../test-data/users';
+import { summaryTexts } from '../test-data/summaryTexts';
 import { clearPreschoolApplications } from '../utils/db';
 import { getApplication } from '../utils/api';
 
-// Child used only by these tests
+// Child used only by these tests. Has two guardians, so step 7 and the
+// summary also show the other guardian.
 const guardian = users.parent;
-const child = 'OtherChild Example';
+const otherGuardian = users.otherParent;
+const child = 'Child Example';
 
 // Every step saves the form to backend, so run all tests in this file one at
 // a time and start each one from an empty application table
@@ -18,7 +21,7 @@ test.describe.configure({ mode: 'default' });
 let loginPage;
 let landingPage;
 let enrollmentPage;
-let childBirthDate; // As shown on the landing page, e.g. '1.2.2016'
+let childBirthDate; // As shown on the landing page, e.g. '1.1.2015'
 
 test.beforeEach(async ({ page }) => {
   clearPreschoolApplications();
@@ -395,6 +398,242 @@ test.describe('Contact info', () => {
     ).toHaveAccessibleDescription(/\S/);
     await enrollmentPage.verifyCurrentStep(7);
   });
+
+  test('other guardian email is optional', async () => {
+    await enrollmentPage.fillGuardianEmail('guardian@example.com');
+    await enrollmentPage.clickNext();
+
+    await enrollmentPage.verifyPreviewStepVisible();
+  });
+
+  test('invalid other guardian email is not accepted', async () => {
+    await enrollmentPage.fillGuardianEmail('guardian@example.com');
+    await enrollmentPage.fillOtherGuardianEmail('abc');
+    await enrollmentPage.clickNextExpectingError();
+
+    await enrollmentPage.verifyOtherGuardianEmailHasError();
+    await enrollmentPage.verifyCurrentStep(7);
+  });
+
+  for (const { name, confirmEmail } of [
+    { name: 'must match', confirmEmail: 'wrong@example.com' },
+    { name: 'is required when email is given', confirmEmail: '' },
+  ]) {
+    test(`other guardian email confirmation ${name}`, async () => {
+      test.fail(true, 'Known bug: confirmation email is not compared to guardian email');
+
+      await enrollmentPage.fillGuardianEmail('guardian@example.com');
+      await enrollmentPage.otherGuardianEmailInput.fill('other@example.com');
+      await enrollmentPage.otherGuardianEmailConfirmInput.fill(confirmEmail);
+      await enrollmentPage.clickNextExpectingError();
+
+      // With the bug the preview opens and the input is gone
+      await expect(
+        enrollmentPage.otherGuardianEmailConfirmInput,
+        'Confirmation email should show an error on step 7'
+      ).toHaveAccessibleDescription(/\S/);
+      await enrollmentPage.verifyCurrentStep(7);
+    });
+  }
+});
+
+test.describe('Summary', () => {
+  test('summary shows the answers', async () => {
+    const { summary } = enrollmentPage;
+
+    // Step 1
+    await enrollmentPage.clickNext();
+
+    // Step 2
+    await enrollmentPage.selectSwedishPreschoolLanguage();
+    await enrollmentPage.clickNext();
+
+    // Step 3
+    await enrollmentPage.selectNeedsExtendedCare();
+    await enrollmentPage.clickNext();
+
+    // Step 4
+    await enrollmentPage.fillExtendedCareStartDate('01.08.2027');
+    await enrollmentPage.selectDayAndEveningCare();
+    await enrollmentPage.clickNext();
+
+    // Step 5
+    await enrollmentPage.selectDaytimeCareExtent('careExtent3to4Hours');
+    await enrollmentPage.setDaytimeCareWeekdayAbsenceDays(3);
+    await enrollmentPage.clickNext();
+
+    // Step 6: no support
+    await enrollmentPage.clickNext();
+
+    // Step 7
+    await enrollmentPage.fillGuardianEmail('guardian@example.com');
+    await enrollmentPage.clickNext();
+
+    await enrollmentPage.verifyPreviewStepVisible();
+
+    await expect(summary.languageSection).toContainText(summaryTexts.language.sv);
+    await expect(enrollmentPage.summaryValue('extendedCareStart')).toHaveText('1.8.2027');
+    await expect(enrollmentPage.summaryValue('extendedCareExtent')).toHaveText([
+      summaryTexts.careType.dayAndEveningCare,
+      summaryTexts.careExtent.careExtent3to4Hours,
+    ]);
+    await expect(summary.supportSection).toContainText(summaryTexts.noSupport);
+    await expect(summary.specialSupport).toBeHidden();
+    await expect(summary.medicationNeed).toBeHidden();
+    await expect(enrollmentPage.summaryValue('guardianName')).toHaveText(guardian.name);
+    await expect(enrollmentPage.summaryValue('guardianEmail')).toHaveText('guardian@example.com');
+  });
+
+  test('summary shows the other guardian', async () => {
+    await enrollmentPage.completeStep6();
+    await enrollmentPage.fillGuardianEmail('guardian@example.com');
+    await enrollmentPage.fillOtherGuardianEmail('other@example.com');
+    await enrollmentPage.clickNext();
+
+    await enrollmentPage.verifyPreviewStepVisible();
+    await expect(enrollmentPage.summary.otherGuardiansSection).toBeVisible();
+    await expect(enrollmentPage.summaryValue('otherGuardianName')).toHaveText(otherGuardian.name);
+    await expect(enrollmentPage.summaryValue('otherGuardianEmail')).toHaveText('other@example.com');
+    await expect(enrollmentPage.summaryValue('guardianEmail')).toHaveText('guardian@example.com');
+  });
+
+  test('summary shows weekday absence days', async () => {
+    test.fail(true, 'Known bug: weekday absence days are not shown in the summary');
+
+    await enrollmentPage.completeStep4();
+    await enrollmentPage.selectDaytimeCareExtent('careExtent4to6Hours');
+    await enrollmentPage.setDaytimeCareWeekdayAbsenceDays(5);
+    await enrollmentPage.clickNext();
+    await enrollmentPage.clickNext();
+    await enrollmentPage.fillGuardianEmail('guardian@example.com');
+    await enrollmentPage.clickNext();
+
+    await enrollmentPage.verifyPreviewStepVisible();
+    // No testid for absence days in the summary yet: check label and value
+    await expect(enrollmentPage.summary.extendedCareSection).toContainText(/Arkipoissaolo[\s\S]*\b5\b/);
+  });
+
+  const supportCases = [
+    { name: 'special support', specialSupport: true, medicationNeed: false },
+    { name: 'medication need', specialSupport: false, medicationNeed: true },
+    { name: 'special support and medication need', specialSupport: true, medicationNeed: true },
+  ];
+
+  for (const { name, specialSupport, medicationNeed } of supportCases) {
+    test(`summary shows ${name}`, async () => {
+      test.fail(true, 'Known bug: special support and medication need texts are swapped in the summary');
+
+      const { summary } = enrollmentPage;
+
+      await enrollmentPage.completeStep5();
+      if (specialSupport) await enrollmentPage.selectSpecialSupport();
+      if (medicationNeed) await enrollmentPage.selectMedicationNeed();
+      await enrollmentPage.clickNext();
+      await enrollmentPage.fillGuardianEmail('guardian@example.com');
+      await enrollmentPage.clickNext();
+
+      await enrollmentPage.verifyPreviewStepVisible();
+
+      if (specialSupport) {
+        await expect(summary.specialSupport).toHaveText(summaryTexts.specialSupport);
+      } else {
+        await expect(summary.specialSupport).toBeHidden();
+      }
+
+      if (medicationNeed) {
+        await expect(summary.medicationNeed).toHaveText(summaryTexts.medicationNeed);
+      } else {
+        await expect(summary.medicationNeed).toBeHidden();
+      }
+
+      await expect(summary.supportSection).not.toContainText(summaryTexts.noSupport);
+    });
+  }
+
+  test.describe('Editing', () => {
+    test.beforeEach(async () => {
+      await enrollmentPage.completeStep7();
+      await enrollmentPage.verifyPreviewStepVisible();
+    });
+
+    test('edit links open the right step', async () => {
+      const { summary } = enrollmentPage;
+
+      await test.step('Language', async () => {
+        await enrollmentPage.editFromSummary(summary.editLanguageLink);
+        await enrollmentPage.verifyPreschoolLanguageStepVisible();
+        await enrollmentPage.verifyCurrentStep(2);
+        await enrollmentPage.returnToSummary();
+      });
+
+      await test.step('Support and medication', async () => {
+        await enrollmentPage.editFromSummary(summary.editSupportLink);
+        await enrollmentPage.verifySupportNeedsStepVisible();
+        await enrollmentPage.verifyCurrentStep(6);
+        await enrollmentPage.returnToSummary();
+      });
+
+      await test.step('Supplementary early childhood education', async () => {
+        await enrollmentPage.editFromSummary(summary.editExtendedCareLink);
+        await enrollmentPage.verifyExtendedCareStepVisible();
+        await enrollmentPage.verifyCurrentStep(3);
+        await enrollmentPage.returnToSummary();
+      });
+    });
+
+    test('answer changed through edit link is shown in summary', async () => {
+      const { summary } = enrollmentPage;
+      await expect(summary.languageSection).toContainText(summaryTexts.language.fi);
+
+      await enrollmentPage.editFromSummary(summary.editLanguageLink);
+      await enrollmentPage.selectSwedishPreschoolLanguage();
+      await enrollmentPage.returnToSummary();
+
+      await expect(summary.languageSection).toContainText(summaryTexts.language.sv);
+    });
+
+    test('can return to summary through stepper after editing', async () => {
+      test.fail(true, 'Known bug: step 8 is disabled in the stepper after leaving it with an edit link');
+
+      await enrollmentPage.editFromSummary(enrollmentPage.summary.editLanguageLink);
+
+      await enrollmentPage.verifyStepEnabled(8);
+      await enrollmentPage.goToStep(8);
+      await enrollmentPage.verifyPreviewStepVisible();
+    });
+
+    test('changing to no extended care clears steps 4 and 5 from summary', async () => {
+      test.fail(true, 'Known bug: summary still shows step 4 and 5 answers after selecting no extended care');
+
+      const { summary } = enrollmentPage;
+
+      await enrollmentPage.editFromSummary(summary.editExtendedCareLink);
+      await enrollmentPage.selectNoExtendedCare();
+      await enrollmentPage.goToStep(7);
+      await enrollmentPage.clickNext();
+
+      await enrollmentPage.verifyPreviewStepVisible();
+      // Answers given by completeStep4 and completeStep5
+      await expect(summary.extendedCareSection).not.toContainText('1.8.2027');
+      await expect(summary.extendedCareSection).not.toContainText(summaryTexts.careType.daytimeCare);
+      await expect(summary.extendedCareSection).not.toContainText(summaryTexts.careExtent.careExtent4to6Hours);
+    });
+
+    test('stepper shows filled steps after logging in again', async () => {
+      test.fail(true, 'Known bug: stepper does not show filled steps when the application is opened again');
+
+      await loginPage.open();
+      await loginPage.loginAs(guardian);
+      await landingPage.openApplication(child);
+
+      await enrollmentPage.verifyCurrentStep(1);
+      for (let step = 2; step <= 8; step++) {
+        await enrollmentPage.verifyStepEnabled(step);
+      }
+      await enrollmentPage.goToStep(8);
+      await enrollmentPage.verifyPreviewStepVisible();
+    });
+  });
 });
 
 test.describe('Preview and sending', () => {
@@ -406,17 +645,16 @@ test.describe('Preview and sending', () => {
   });
 
   test('preview shows the child from landing page', async () => {
-    const { childInfoSection, guardianInfoSection } = enrollmentPage;
     const [day, month, year] = childBirthDate.split('.');
     const ssnDate = day.padStart(2, '0') + month.padStart(2, '0') + year.slice(2);
 
-    await expect(enrollmentPage.previewValue(childInfoSection, 'childName')).toHaveText(child);
-    await expect(enrollmentPage.previewValue(childInfoSection, 'childBirthYear')).toHaveText(year);
+    await expect(enrollmentPage.summaryValue('childName')).toHaveText(child);
+    await expect(enrollmentPage.summaryValue('childBirthYear')).toHaveText(year);
     // Henkilötunnus starts with the birth date as ddmmyy
-    await expect(enrollmentPage.previewValue(childInfoSection, 'childSsn')).toHaveText(new RegExp(`^${ssnDate}`));
+    await expect(enrollmentPage.summaryValue('childSsn')).toHaveText(new RegExp(`^${ssnDate}`));
 
-    await expect(enrollmentPage.previewValue(guardianInfoSection, 'guardianName')).toHaveText(guardian.name);
-    await expect(enrollmentPage.previewValue(guardianInfoSection, 'guardianEmail')).toHaveText(guardianEmail);
+    await expect(enrollmentPage.summaryValue('guardianName')).toHaveText(guardian.name);
+    await expect(enrollmentPage.summaryValue('guardianEmail')).toHaveText(guardianEmail);
   });
 
   test('sending application returns to login page', async ({ request }) => {
@@ -430,7 +668,7 @@ test.describe('Preview and sending', () => {
     expect(application.status).toBe('submitted');
   });
 
-  test('sent application shows only notice and summary', async ({ page }) => {
+  test('sent application shows only notice and summary', async () => {
     const applicationId = enrollmentPage.applicationId();
 
     await enrollmentPage.sendApplication();
@@ -441,10 +679,13 @@ test.describe('Preview and sending', () => {
 
     expect(enrollmentPage.applicationId()).toBe(applicationId);
     await expect(enrollmentPage.alreadySubmittedNotice).toBeVisible();
-    await expect(enrollmentPage.previewValue(enrollmentPage.childInfoSection, 'childName')).toHaveText(child);
+    await expect(enrollmentPage.summaryValue('childName')).toHaveText(child);
 
-    // No form: stepper and navigation are hidden
-    await expect(page.locator('[aria-label*="Vaihe 1/8"]')).toHaveCount(0);
+    // No form: stepper, edit links and navigation are hidden
+    await expect(enrollmentPage.stepper).toBeHidden();
+    await expect(enrollmentPage.summary.editLanguageLink).toBeHidden();
+    await expect(enrollmentPage.summary.editSupportLink).toBeHidden();
+    await expect(enrollmentPage.summary.editExtendedCareLink).toBeHidden();
     await expect(enrollmentPage.previousButton).toBeHidden();
     await expect(enrollmentPage.nextButton).toBeHidden();
     await expect(enrollmentPage.sendApplicationButton).toBeHidden();

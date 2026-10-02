@@ -4,15 +4,13 @@ export class LoginPage {
   constructor(page) {
     this.page = page;
 
-    this.heading = page.getByRole('heading', { level: 1 });
+    this.heading = page.getByTestId('title-home');
+    this.loginButtons = page.getByTestId(/^btn-login-/);
   }
 
   // user from test-data/users.js
   loginButton(user) {
-    return this.page.getByRole('button', {
-      name: `Login: ${user.name} (${user.ssn})`,
-      exact: true,
-    });
+    return this.page.getByTestId(`btn-login-${user.ssn}`);
   }
 
   async open() {
@@ -21,9 +19,7 @@ export class LoginPage {
 
   async verifyPageLoaded() {
     await expect(this.page).toHaveURL(/\/$/);
-    await expect(
-      this.page.getByRole('button', { name: /^Login: / }).first()
-    ).toBeVisible();
+    await expect(this.loginButtons.first()).toBeVisible();
   }
 
   async loginAs(user) {
