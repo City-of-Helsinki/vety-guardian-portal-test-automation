@@ -58,7 +58,7 @@ npx playwright test tests/landing.spec.js
 ### Enrollment Tests
 
 - Every step of the form is saved to the backend, so the tests in `tests/enrollment.spec.js` run one at a time and each test starts from an empty application table. Don't run them with `--repeat-each`: the copies run in parallel and clear each other's data.
-- Known bugs are marked with `test.fail(...)`. These tests are reported as passed while the bug exists. When the bug is fixed, the test fails with "expected to fail, but passed" — then remove its `test.fail(...)` line.
+- Known bugs are marked with `test.fail(...)`, with the Jira ticket key in the description (e.g. `VETY-176`). These tests are reported as passed while the bug exists. When the bug is fixed, the test fails with "expected to fail, but passed" — then remove its `test.fail(...)` line.
 
 ## Environment Variables
 
