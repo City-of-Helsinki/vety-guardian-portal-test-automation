@@ -315,7 +315,7 @@ test.describe('Saved answers', () => {
   });
 
   test('weekday absence days are shown when returning to step 5', async () => {
-    test.fail(true, 'Known bug: absence days are saved but not shown when returning to step 5');
+    test.fail(true, 'VETY-176: absence days are saved but not shown when returning to step 5');
 
     await enrollmentPage.completeStep4();
 
@@ -344,7 +344,7 @@ test.describe('Saved answers', () => {
   });
 
   test('weekday absence days default is 0', async () => {
-    test.fail(true, 'Known issue: absence days field has no default value');
+    test.fail(true, 'VETY-176: absence days field has no default value 0');
 
     await enrollmentPage.completeStep4();
 
@@ -368,7 +368,7 @@ test.describe('Contact info', () => {
   });
 
   test('guardian email syntax is checked before saving', async ({ page }) => {
-    test.fail(true, 'Known issue: email syntax is only checked by backend');
+    test.fail(true, 'VETY-203: email syntax is only checked by backend');
 
     const saveRequest = page
       .waitForRequest(
@@ -385,7 +385,7 @@ test.describe('Contact info', () => {
   });
 
   test('guardian email confirmation must match', async () => {
-    test.fail(true, 'Known bug: confirmation email is not compared to guardian email');
+    test.fail(true, 'VETY-183: confirmation email is not compared to guardian email');
 
     await enrollmentPage.guardianEmailInput.fill('guardian@example.com');
     await enrollmentPage.guardianEmailConfirmInput.fill('other@example.com');
@@ -420,7 +420,7 @@ test.describe('Contact info', () => {
     { name: 'is required when email is given', confirmEmail: '' },
   ]) {
     test(`other guardian email confirmation ${name}`, async () => {
-      test.fail(true, 'Known bug: confirmation email is not compared to guardian email');
+      test.fail(true, 'VETY-183: confirmation email is not compared to guardian email');
 
       await enrollmentPage.fillGuardianEmail('guardian@example.com');
       await enrollmentPage.otherGuardianEmailInput.fill('other@example.com');
@@ -498,7 +498,7 @@ test.describe('Summary', () => {
   });
 
   test('summary shows weekday absence days', async () => {
-    test.fail(true, 'Known bug: weekday absence days are not shown in the summary');
+    test.fail(true, 'VETY-195: weekday absence days are not shown in the summary');
 
     await enrollmentPage.completeStep4();
     await enrollmentPage.selectDaytimeCareExtent('careExtent4to6Hours');
@@ -521,7 +521,7 @@ test.describe('Summary', () => {
 
   for (const { name, specialSupport, medicationNeed } of supportCases) {
     test(`summary shows ${name}`, async () => {
-      test.fail(true, 'Known bug: special support and medication need texts are swapped in the summary');
+      test.fail(true, 'VETY-199: special support and medication need texts are swapped in the summary');
 
       const { summary } = enrollmentPage;
 
@@ -593,7 +593,7 @@ test.describe('Summary', () => {
     });
 
     test('can return to summary through stepper after editing', async () => {
-      test.fail(true, 'Known bug: step 8 is disabled in the stepper after leaving it with an edit link');
+      test.fail(true, 'VETY-196: step 8 is disabled in the stepper after leaving it with an edit link');
 
       await enrollmentPage.editFromSummary(enrollmentPage.summary.editLanguageLink);
 
@@ -603,7 +603,7 @@ test.describe('Summary', () => {
     });
 
     test('changing to no extended care clears steps 4 and 5 from summary', async () => {
-      test.fail(true, 'Known bug: summary still shows step 4 and 5 answers after selecting no extended care');
+      test.fail(true, 'VETY-197: summary still shows step 4 and 5 answers after selecting no extended care');
 
       const { summary } = enrollmentPage;
 
@@ -620,7 +620,7 @@ test.describe('Summary', () => {
     });
 
     test('stepper shows filled steps after logging in again', async () => {
-      test.fail(true, 'Known bug: stepper does not show filled steps when the application is opened again');
+      test.fail(true, 'VETY-200: stepper does not show filled steps when the application is opened again');
 
       await loginPage.open();
       await loginPage.loginAs(guardian);
