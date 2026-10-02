@@ -4,38 +4,34 @@ export class LandingPage {
   constructor(page) {
     this.page = page;
 
-    this.heading = page.getByRole('heading', { level: 1 });
+    this.heading = page.getByTestId('title-landing');
 
-    // No data-testids yet. Each child has a name card and an application card
-    // side by side inside a common parent element.
-    this.childNameCards = page.locator('[class*="dependant-card"]');
-    this.childNames = this.childNameCards.getByRole('heading', { level: 2 });
+    // Children are numbered in testids: dependant-0, dependant-name-0, ...
+    this.children = page.getByTestId(/^dependant-\d+$/);
+    this.childNames = page.getByTestId(/^dependant-name-\d+$/);
 
     // Shown for a guardian with turvakielto
-    this.securityNotification = page.getByRole('region', {
-      name: 'Notification',
-    });
+    this.securityNotification = page.getByTestId('notification-turvakielto');
+    this.noChildrenText = page.getByTestId('text-no-dependants');
   }
 
-  // Name card + application card of one child
+  // Card of one child
   child(childName) {
-    return this.childNameCards
-      .filter({
-        has: this.page.getByRole('heading', { name: childName, exact: true }),
-      })
-      .locator('xpath=..');
+    return this.children.filter({
+      has: this.childNames.and(this.page.getByText(childName, { exact: true })),
+    });
   }
 
   // Opens (or creates) the child's application: /application/<application id>
   async openApplication(childName) {
-    await this.child(childName).getByRole('button').click();
+    await this.child(childName).getByTestId(/^btn-open-application-\d+$/).click();
     await expect(this.page).toHaveURL(/\/application\/[^/]+$/);
   }
 
   // Returns the birth date shown on the child's card, e.g. '1.2.2016'
   async childBirthDate(childName) {
     const ageText = await this.child(childName)
-      .locator('[class*="age-text"]')
+      .getByTestId(/^dependant-age-\d+$/)
       .textContent();
 
     return ageText.split(' - ')[0].trim();

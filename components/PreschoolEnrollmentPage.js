@@ -7,55 +7,43 @@ export class PreschoolEnrollmentPage {
     this.page = page;
 
     // Page heading
-    this.pageHeading = page.getByRole('heading', {
-      name: 'Esiopetukseen ilmoittautuminen',
-      exact: true,
-    });
+    this.pageHeading = page.getByTestId('title-application');
 
-    // Stepper
-    this.stepper = page.locator('[class*="Stepper-module_stepper"]');
-    this.currentStep = page.locator('[aria-current="step"]');
+    // Stepper. Step testids start from 0: stepper-step-0 is step 1.
+    this.stepper = page.getByTestId('stepper');
+    this.currentStep = this.stepper.locator('[aria-current="step"]');
 
-    // Step 1 controls
-    this.privatePreschoolCheckbox = page.getByLabel(
-      'Olemme hakeneet esiopetusta ensisijaisesti yksityisestä päiväkodista.'
-    );
+    // Step 1 - Alku
+    this.startHeading = page.getByTestId('step-alku-title');
+
+    this.privatePreschoolCheckbox = page.getByTestId('cb-hakenut-yksityiseen');
 
     // Accordion
-    this.addressChangeAccordion = page.getByRole('button', {
+    this.addressChangeAccordionContainer = page.getByTestId('accordion-osoitemuutos');
+
+    this.addressChangeAccordion = this.addressChangeAccordionContainer.getByRole('button', {
       name: 'Onko lapsen kotiosoite muuttumassa?',
     });
 
-    this.closeAddressChangeAccordion = page.getByTestId(
-      'accordion-1-closeButton'
+    // Close button testid has a generated accordion id, e.g. accordion-9-closeButton
+    this.closeAddressChangeAccordion = this.addressChangeAccordionContainer.getByTestId(
+      /-closeButton$/
     );
 
     // Navigation buttons
-    this.previousButton = page.getByRole('button', {
-      name: 'Edellinen sivu',
-    });
-
-    this.nextButton = page.getByRole('button', {
-      name: 'Jatka seuraavaan',
-    });
+    this.previousButton = page.getByTestId('btn-previous');
+    this.nextButton = page.getByTestId('btn-next');
 
     // Step 2 - Esiopetuksen kieli
 
-    this.preschoolLanguageHeading = page.getByRole('heading', {
-      name: 'Esiopetuksen kieli',
-      exact: true,
-    });
+    this.preschoolLanguageHeading = page.getByTestId('step-kieli-title');
 
     this.finnishLanguageRadio = page.getByTestId('rb-eo-kieli-fi');
     this.swedishLanguageRadio = page.getByTestId('rb-eo-kieli-sv');
 
     // Step 3 - Täydentävä varhaiskasvatus
 
-    // Step 3 h2 is the same as in steps 4 and 5, so use the radio group label
-    this.extendedCareHeading = page.getByRole('group', {
-      name: 'Täydentävän varhaiskasvatuksen tarve',
-      exact: true,
-    });
+    this.extendedCareHeading = page.getByTestId('step-taydentava-title');
 
     this.needsExtendedCareRadio = page.getByTestId('rb-extended-care');
     this.noExtendedCareRadio = page.getByTestId('rb-no-extended-care');
@@ -63,18 +51,15 @@ export class PreschoolEnrollmentPage {
     this.varhaiskasvatusmaksutLink = page.getByTestId('link-vk-maksut');
 
     // Step 4 - Aloituspäivä ja hoidon tarve
-    this.startAndCareNeedHeading = page.getByRole('heading', {
-      name: 'Täydentävän varhaiskasvatuksen tarve ja aloituspäivä',
-      exact: true,
-    });
+    this.startAndCareNeedHeading = page.getByTestId('step-hoidon-tarve-title');
 
     this.extendedCareStartDate = page.getByTestId(
       'date-extended-care-start'
     );
 
-    this.openDatePickerButton = page.getByRole('button', {
-      name: 'Choose date',
-    });
+    this.openDatePickerButton = page
+      .getByTestId('fieldset-aloitus-pvm')
+      .getByRole('button');
 
     this.daytimeCareRadio = page.getByTestId(
       'rb-paivaaikainen_varhaiskasvatus'
@@ -90,14 +75,13 @@ export class PreschoolEnrollmentPage {
 
     // Step 5 - Varhaiskasvatuksen laajuus
 
-    // Step 5 h2 is the same as step 4, so use the care extent radio group label
-    this.careExtentHeading = page.getByRole('group', {
-      name: 'Varhaiskasvatuksen ja esiopetuksen laajuus yhteensä',
-    });
+    this.careExtentHeading = page.getByTestId('step-varhaiskasvatuksen-laajuus-title');
 
     //
     // Step 5 variants
     //
+
+    const absenceDays = page.getByTestId('fieldset-arkipoissaolot');
 
     this.step5 = {
       daytimeCare: {
@@ -121,12 +105,12 @@ export class PreschoolEnrollmentPage {
           'input-arki-poissaolot'
         ),
 
-        decreaseAbsenceDaysButton: page.getByRole(
+        decreaseAbsenceDaysButton: absenceDays.getByRole(
           'button',
           { name: 'Decrease by one' }
         ),
 
-        increaseAbsenceDaysButton: page.getByRole(
+        increaseAbsenceDaysButton: absenceDays.getByRole(
           'button',
           { name: 'Increase by one' }
         ),
@@ -143,80 +127,65 @@ export class PreschoolEnrollmentPage {
 
     // Step 6 - Tuki ja lääkehoidon tarve
 
-    this.supportNeedsHeading = page.getByRole('heading', {
-      name: 'Erityisen tuen ja lääkehoidon tarve',
-    });
+    this.supportNeedsHeading = page.getByTestId('step-tuki-ja-laakehoito-title');
 
     this.specialSupportCheckbox = page.getByTestId('cb-erityinen-tuki');
     this.medicationNeedCheckbox = page.getByTestId('cb-laakehoidon-tarve');
 
     // Step 7 - Yhteystiedot
 
-    this.contactInfoHeading = page.getByRole('heading', {
-      name: 'Yhteystiedot',
-      exact: true,
-    });
+    this.contactInfoHeading = page.getByTestId('step-yhteystiedot-title');
 
-    const guardianEmailGroup = page.getByRole('group', {
-      name: 'Huoltajan sähköpostiosoite',
-      exact: true,
-    });
-    const otherGuardianEmailGroup = page.getByRole('group', {
-      name: 'Toisen huoltajan sähköpostiosoite',
-      exact: true,
-    });
-
-    this.guardianEmailInput = guardianEmailGroup.getByRole('textbox', {
-      name: 'Sähköpostiosoite',
-      exact: true,
-    });
-    this.guardianEmailConfirmInput = guardianEmailGroup.getByRole('textbox', {
-      name: 'Sähköpostiosoite uudestaan',
-      exact: true,
-    });
-    this.otherGuardianEmailInput = otherGuardianEmailGroup.getByRole('textbox', {
-      name: 'Sähköpostiosoite',
-      exact: true,
-    });
-    this.otherGuardianEmailConfirmInput = otherGuardianEmailGroup.getByRole('textbox', {
-      name: 'Sähköpostiosoite uudestaan',
-      exact: true,
-    });
+    this.guardianEmailInput = page.getByTestId('input-h1-sahkoposti');
+    this.guardianEmailConfirmInput = page.getByTestId('input-h1-sahkoposti-confirm');
+    this.otherGuardianEmailInput = page.getByTestId('input-h2-sahkoposti');
+    this.otherGuardianEmailConfirmInput = page.getByTestId('input-h2-sahkoposti-confirm');
 
     // Step 8 - Esikatselu ja lähetys
 
-    this.previewHeading = page.getByRole('heading', {
-      name: 'Esikatselu ja lähetys',
-      exact: true,
-    });
+    this.previewHeading = page.getByTestId('step-esikatselu-title');
 
-    this.sendApplicationButton = page.getByRole('button', {
-      name: 'Lähetä hakemus',
-    });
+    this.sendApplicationButton = page.getByTestId('btn-submit');
 
-    // Shown instead of the form when the application has already been sent
-    this.alreadySubmittedNotice = page.getByRole('heading', {
-      name: 'esikatselu.alreadySubmitted',
-    });
+    // Shown on the preview when the application has already been sent
+    this.alreadySubmittedNotice = page.getByTestId('notification-already-submitted');
 
-    this.childInfoSection = page.locator('section').filter({
-      has: page.getByRole('heading', { name: 'Lapsen tiedot', exact: true }),
-    });
-    this.guardianInfoSection = page.locator('section').filter({
-      has: page.getByRole('heading', { name: 'Huoltajan tiedot', exact: true }),
-    });
+    this.summary = {
+      childSection: page.getByTestId('section-lapsen-tiedot'),
+      languageSection: page.getByTestId('section-kieli'),
+      supportSection: page.getByTestId('section-tuki-ja-laakehoito'),
+      extendedCareSection: page.getByTestId('section-varhaiskasvatus'),
+      guardianSection: page.getByTestId('section-huoltajan-tiedot'),
+      // Shown when the child has another guardian
+      otherGuardiansSection: page.getByTestId('section-muut-huoltajat'),
 
-    // Labels of the preview values. No data-testids yet and labels are still
-    // translation keys, so update these when the texts are added.
-    this.previewLabels = {
-      childName: 'esikatselu.lapsenNimi',
-      childSsn: 'esikatselu.henkilotunnus',
-      childBirthYear: 'esikatselu.syntymavuosi',
-      childAddress: 'esikatselu.karttaosoite',
-      guardianName: 'esikatselu.huoltajanNimi',
-      guardianAddress: 'esikatselu.osoite',
-      guardianPhone: 'esikatselu.puhelinnumero',
-      guardianEmail: 'esikatselu.sahkoposti',
+      // Shown only when selected on step 6
+      specialSupport: page.getByTestId('summary-erityinen-tuki'),
+      medicationNeed: page.getByTestId('summary-laakehoito'),
+
+      // Muokkaa links
+      editLanguageLink: page.getByTestId('go-to-kieli'),
+      editSupportLink: page.getByTestId('go-to-tuki-ja-laakehoito'),
+      editExtendedCareLink: page.getByTestId('go-to-taydentava'),
+    };
+
+    // Summary values: summary-<name>-value
+    this.summaryValueNames = {
+      childName: 'lapsi-nimi',
+      childSsn: 'lapsi-henkilotunnus',
+      childBirthYear: 'lapsi-syntymavuosi',
+      childAddress: 'lapsi-karttaosoite',
+      preschoolStart: 'esiopetus-alkaa',
+      extendedCareStart: 'taydentava-alkaa',
+      // Two values: care type (step 4) and care extent (step 5)
+      extendedCareExtent: 'taydentava-laajuus',
+      guardianName: 'h1-nimi',
+      guardianAddress: 'h1-osoite',
+      guardianPhone: 'h1-puhelinnumero',
+      guardianEmail: 'h1-sahkoposti',
+      otherGuardianName: 'h2-nimi',
+      otherGuardianAddress: 'h2-osoite',
+      otherGuardianEmail: 'h2-sahkoposti',
     };
   }
 
@@ -253,18 +222,21 @@ export class PreschoolEnrollmentPage {
 //    await this.page.getByTestId(testId).check();
 //  }
 
+  // stepNumber 1-8
+  stepperStep(stepNumber) {
+    return this.page.getByTestId(`stepper-step-${stepNumber - 1}`);
+  }
+
   async goToStep(stepNumber) {
-    await this.page.locator(
-      `[aria-label*="Vaihe ${stepNumber}/8"]`
-    ).click();
+    await this.stepperStep(stepNumber).click();
   }
 
   async verifyCurrentStep(stepNumber) {
-    await expect(
-      this.page.locator(
-        `[aria-label*="Vaihe ${stepNumber}/8"]`
-      )
-    ).toHaveAttribute('aria-current', 'step');
+    await expect(this.stepperStep(stepNumber)).toHaveAttribute('aria-current', 'step');
+  }
+
+  async verifyStepEnabled(stepNumber) {
+    await expect(this.stepperStep(stepNumber)).toBeEnabled();
   }
 
   // Labels overlap the radio inputs in these UI components, so click the label instead
@@ -519,21 +491,32 @@ export class PreschoolEnrollmentPage {
     await expect(this.guardianEmailConfirmInput).toHaveAccessibleDescription(/\S/);
   }
 
+  async verifyOtherGuardianEmailHasError() {
+    await expect(this.otherGuardianEmailInput).toHaveAccessibleDescription(/\S/);
+  }
+
   // Step 8 /////////////////////////////////////////////////////
   async verifyPreviewStepVisible() {
     await expect(this.previewHeading).toBeVisible();
   }
 
-  // section: this.childInfoSection or this.guardianInfoSection
-  // field: key of this.previewLabels, e.g. 'childName'
-  previewValue(section, field) {
-    return section
-      .locator('[class*="label-value"]')
-      .filter({
-        has: this.page.getByText(this.previewLabels[field], { exact: true }),
-      })
-      .locator('span')
-      .last();
+  // name: key of this.summaryValueNames, e.g. 'childName'
+  summaryValue(name) {
+    return this.page.getByTestId(`summary-${this.summaryValueNames[name]}-value`);
+  }
+
+  // link: one of this.summary.edit*Link. Opens the step where the answer is edited.
+  async editFromSummary(link) {
+    await link.click();
+    await expect(this.previewHeading, 'Step should open for editing').toBeHidden();
+  }
+
+  // From any step after the summary has been reached once
+  async returnToSummary() {
+    for (let i = 0; i < 7 && !(await this.previewHeading.isVisible()); i++) {
+      await this.clickNext();
+    }
+    await this.verifyPreviewStepVisible();
   }
 
   async sendApplication() {
@@ -594,8 +577,6 @@ export class PreschoolEnrollmentPage {
   }
 
   async openStep(stepNumber) {
-    await this.page
-      .locator(`[aria-label*="Vaihe ${stepNumber}/8"]`)
-      .click();
+    await this.goToStep(stepNumber);
   }
 }
