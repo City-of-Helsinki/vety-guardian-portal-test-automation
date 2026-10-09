@@ -593,8 +593,6 @@ test.describe('Summary', () => {
     });
 
     test('can return to summary through stepper after editing', async () => {
-      test.fail(true, 'VETY-196: step 8 is disabled in the stepper after leaving it with an edit link');
-
       await enrollmentPage.editFromSummary(enrollmentPage.summary.editLanguageLink);
 
       await enrollmentPage.verifyStepEnabled(8);
@@ -602,9 +600,7 @@ test.describe('Summary', () => {
       await enrollmentPage.verifyPreviewStepVisible();
     });
 
-    test('changing to no extended care clears steps 4 and 5 from summary', async () => {
-      test.fail(true, 'VETY-197: summary still shows step 4 and 5 answers after selecting no extended care');
-
+    test('changing to no extended care clears steps 4 and 5 from summary', async ({ request }) => {
       const { summary } = enrollmentPage;
 
       await enrollmentPage.editFromSummary(summary.editExtendedCareLink);
@@ -613,15 +609,21 @@ test.describe('Summary', () => {
       await enrollmentPage.clickNext();
 
       await enrollmentPage.verifyPreviewStepVisible();
-      // Answers given by completeStep4 and completeStep5
-      await expect(summary.extendedCareSection).not.toContainText('1.8.2027');
-      await expect(summary.extendedCareSection).not.toContainText(summaryTexts.careType.daytimeCare);
-      await expect(summary.extendedCareSection).not.toContainText(summaryTexts.careExtent.careExtent4to6Hours);
+      // Answers given by completeStep4 and completeStep5 are replaced with '–'
+      await expect(enrollmentPage.summaryValue('extendedCareStart')).toHaveText('–');
+      await expect(enrollmentPage.summaryValue('extendedCareExtent')).toHaveText(['–']);
+
+      const application = await getApplication(request, enrollmentPage.applicationId());
+      expect(application).toMatchObject({
+        taydentavaVarhaiskasvatus: false,
+        taydentavaVarhaiskasvatusAloitus: null,
+        hoidonTarve: '',
+        palvelunTarve: '',
+        arkipoissaolotLkm: null,
+      });
     });
 
     test('stepper shows filled steps after logging in again', async () => {
-      test.fail(true, 'VETY-200: stepper does not show filled steps when the application is opened again');
-
       await loginPage.open();
       await loginPage.loginAs(guardian);
       await landingPage.openApplication(child);
