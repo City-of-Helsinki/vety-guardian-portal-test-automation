@@ -210,16 +210,25 @@ export class PreschoolEnrollmentPage {
     await expect(this.pageHeading).toBeVisible();
   }
 
+  // Leaving an input can change the layout (validation messages appear or
+  // disappear) and move the buttons. Leave it before clicking, like a user
+  // does, so the click is not lost.
+  async leaveFocusedInput() {
+    await this.page.evaluate(() => document.activeElement?.blur());
+  }
+
   // Each step is saved to backend before the next one opens, so wait for the
   // step to change before continuing
   async clickNext() {
     const step = await this.currentStep.getAttribute('aria-label');
+    await this.leaveFocusedInput();
     await this.nextButton.click();
     await expect(this.currentStep, 'Next step should open').not.toHaveAttribute('aria-label', step);
   }
 
   // For validation tests: click next when the step should not change
   async clickNextExpectingError() {
+    await this.leaveFocusedInput();
     await this.nextButton.click();
   }
 

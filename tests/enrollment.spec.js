@@ -398,6 +398,36 @@ test.describe('Saved answers', () => {
     await enrollmentPage.verifyCareExtentStepVisible();
     await enrollmentPage.verifyWeekdayAbsenceDays(0);
   });
+
+  test('weekday absence days default is 0 after changing back to extended care', async () => {
+    test.fail(true, 'VETY-209: absence days have no default value after changing extended care to no and back to yes');
+
+    // Extended care with absence days
+    await enrollmentPage.completeStep4();
+    await enrollmentPage.selectDaytimeCareExtent('careExtent4to6Hours');
+    await enrollmentPage.setWeekdayAbsenceDays(3);
+    await enrollmentPage.clickNext();
+
+    // Change to no extended care and continue to the summary
+    await enrollmentPage.goToStep(3);
+    await enrollmentPage.selectNoExtendedCare();
+    await enrollmentPage.clickNext();
+    await enrollmentPage.clickNext();
+    await enrollmentPage.fillGuardianContactInfo();
+    await enrollmentPage.clickNext();
+    await enrollmentPage.verifyPreviewStepVisible();
+
+    // Change back to extended care
+    await enrollmentPage.goToStep(3);
+    await enrollmentPage.selectNeedsExtendedCare();
+    await enrollmentPage.clickNext();
+    await enrollmentPage.fillExtendedCareStartDate('01.08.2027');
+    await enrollmentPage.selectDaytimeCare();
+    await enrollmentPage.clickNext();
+
+    await enrollmentPage.verifyCareExtentStepVisible();
+    await enrollmentPage.verifyWeekdayAbsenceDays(0);
+  });
 });
 
 test.describe('Contact info', () => {
@@ -441,9 +471,22 @@ test.describe('Contact info', () => {
     await enrollmentPage.verifyCurrentStep(7);
   });
 
-  test('guardian phone number is required', async () => {
-    test.fail(true, 'No ticket yet: first click on next does nothing when an email is given without a phone number');
+  test('matching confirmation email shows no error while typing', async ({ page }) => {
+    test.fail(true, 'VETY-211: confirmation email shows emailRequired error until leaving the input, although it matches');
 
+    // Type like a user: email, Tab to the confirmation input, confirmation
+    await enrollmentPage.guardianEmailInput.pressSequentially('guardian@example.com');
+    await page.keyboard.press('Tab');
+    await page.keyboard.type('guardian@example.com');
+    await expect(enrollmentPage.guardianEmailConfirmInput).toBeFocused();
+
+    // The error appears a moment after typing, so let validation run before
+    // checking that there is none
+    await page.waitForTimeout(1000);
+    await expect(enrollmentPage.guardianEmailConfirmInput).toHaveAccessibleDescription('');
+  });
+
+  test('guardian phone number is required', async () => {
     await enrollmentPage.fillGuardianEmail('guardian@example.com');
     await enrollmentPage.clickNextExpectingError();
 
@@ -486,8 +529,6 @@ test.describe('Contact info', () => {
   });
 
   test('other guardian email without phone number is accepted', async () => {
-    test.fail(true, 'No ticket yet: first click on next does nothing when an email is given without a phone number');
-
     await enrollmentPage.fillGuardianContactInfo();
     await enrollmentPage.fillOtherGuardianEmail('other@example.com');
     await enrollmentPage.clickNext();
@@ -754,7 +795,7 @@ test.describe('Summary', () => {
     });
 
     test('changing to no extended care clears absence days from draft', async ({ request }) => {
-      test.fail(true, 'No ticket yet: absence days stay in the draft after selecting no extended care');
+      test.fail(true, 'VETY-209: absence days stay in the draft after selecting no extended care');
 
       await enrollmentPage.editFromSummary(enrollmentPage.summary.editExtendedCareLink);
       await enrollmentPage.selectNoExtendedCare();
