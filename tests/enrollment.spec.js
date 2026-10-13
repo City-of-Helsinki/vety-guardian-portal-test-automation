@@ -471,6 +471,26 @@ test.describe('Contact info', () => {
     await enrollmentPage.verifyCurrentStep(7);
   });
 
+  test('invalid email does not block moving forward from previous step', async ({ page }) => {
+    test.fail(true, 'VETY-211: invalid email is saved when going back from step 7, and backend error blocks moving forward without an error in the UI');
+
+    const saveResponses = [];
+    page.on('response', (response) => {
+      if (response.request().method() === 'PUT' && response.url().includes('/preschool-application-form/')) {
+        saveResponses.push(response.status());
+      }
+    });
+
+    await enrollmentPage.fillGuardianEmail('aaa');
+    await enrollmentPage.clickPrevious();
+    await enrollmentPage.verifySupportNeedsStepVisible();
+
+    // Step 6 is valid, so step 7 should open. The invalid email is checked there.
+    await enrollmentPage.clickNext();
+    await enrollmentPage.verifyContactInfoStepVisible();
+    expect(saveResponses, 'No save should fail').not.toContain(400);
+  });
+
   test('matching confirmation email shows no error while typing', async ({ page }) => {
     test.fail(true, 'VETY-211: confirmation email shows emailRequired error until leaving the input, although it matches');
 
