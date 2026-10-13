@@ -88,7 +88,7 @@ test.describe('Preschool enrollment', () => {
     await enrollmentPage.selectDaytimeCareExtent(
       'careExtent4to6Hours'
     );
-    await enrollmentPage.setDaytimeCareWeekdayAbsenceDays(2);
+    await enrollmentPage.setWeekdayAbsenceDays(2);
     await enrollmentPage.clickNext();
 
     // Step 6
@@ -148,17 +148,15 @@ test.describe('Preschool enrollment', () => {
     await enrollmentPage.selectDaytimeCare();
     await enrollmentPage.verifyDaytimeCareSelected();
 
-    await enrollmentPage.selectDayAndEveningCare();
-    await enrollmentPage.verifyDayAndEveningCareSelected();
-
-    await enrollmentPage.selectRoundTheClockCare();
-    await enrollmentPage.verifyRoundTheClockCareSelected();
+    await enrollmentPage.selectShiftCare();
+    await enrollmentPage.verifyShiftCareSelected();
   });
 
   test('step 5 daytime care extent selection works', async () => {
     await enrollmentPage.completeStep4();
 
     await enrollmentPage.verifyCareExtentStepVisible();
+    await enrollmentPage.verifyDaytimeCareExtentsVisible();
 
     await enrollmentPage.selectDaytimeCareExtent(
       'careExtent1to3Hours'
@@ -168,7 +166,56 @@ test.describe('Preschool enrollment', () => {
       'careExtent1to3Hours'
     );
 
-    await enrollmentPage.setDaytimeCareWeekdayAbsenceDays(3);
+    await enrollmentPage.setWeekdayAbsenceDays(3);
+  });
+
+  test('step 5 shift care extent selection works', async () => {
+    await enrollmentPage.completeStep3();
+
+    await enrollmentPage.fillExtendedCareStartDate('01.08.2027');
+    await enrollmentPage.selectShiftCare();
+    await enrollmentPage.clickNext();
+
+    await enrollmentPage.verifyCareExtentStepVisible();
+    await enrollmentPage.verifyShiftCareExtentsVisible();
+
+    for (const extent of Object.keys(enrollmentPage.step5.shiftCare)) {
+      await enrollmentPage.selectShiftCareExtent(extent);
+      await enrollmentPage.verifyShiftCareExtentSelected(extent);
+    }
+
+    await enrollmentPage.setWeekdayAbsenceDays(3);
+    await enrollmentPage.clickNext();
+    await enrollmentPage.verifySupportNeedsStepVisible();
+  });
+
+  test('changing care type changes step 5 extents', async () => {
+    await enrollmentPage.completeStep4();
+
+    await enrollmentPage.verifyDaytimeCareExtentsVisible();
+    await enrollmentPage.clickPrevious();
+
+    await enrollmentPage.selectShiftCare();
+    await enrollmentPage.clickNext();
+
+    await enrollmentPage.verifyShiftCareExtentsVisible();
+  });
+
+  test('no extended care skips steps 4 and 5', async () => {
+    await enrollmentPage.completeStep2();
+
+    await enrollmentPage.selectNoExtendedCare();
+    await enrollmentPage.clickNext();
+
+    await enrollmentPage.verifySupportNeedsStepVisible();
+    await enrollmentPage.verifyCurrentStep(6);
+    await expect(enrollmentPage.stepperStep(4)).toBeDisabled();
+    await expect(enrollmentPage.stepperStep(5)).toBeDisabled();
+
+    // Back also skips steps 4 and 5
+    await enrollmentPage.clickPrevious();
+    await enrollmentPage.verifyExtendedCareStepVisible();
+    await enrollmentPage.verifyCurrentStep(3);
   });
 
   test('step 6 support selections work', async () => {
@@ -261,12 +308,12 @@ test.describe('Saved answers', () => {
 
     // Step 4
     await enrollmentPage.fillExtendedCareStartDate('01.08.2027');
-    await enrollmentPage.selectDayAndEveningCare();
+    await enrollmentPage.selectShiftCare();
     await enrollmentPage.clickNext();
 
-    // Step 5 (absence days are checked in their own test)
-    await enrollmentPage.selectDaytimeCareExtent('careExtent3to4Hours');
-    await enrollmentPage.setDaytimeCareWeekdayAbsenceDays(3);
+    // Step 5
+    await enrollmentPage.selectShiftCareExtent('careExtent101to160Hours');
+    await enrollmentPage.setWeekdayAbsenceDays(3);
     await enrollmentPage.clickNext();
 
     // Step 6
@@ -275,8 +322,9 @@ test.describe('Saved answers', () => {
     await enrollmentPage.clickNext();
 
     // Step 7
-    await enrollmentPage.fillGuardianEmail('guardian@example.com');
+    await enrollmentPage.fillGuardianContactInfo('guardian@example.com', '0401234567');
     await enrollmentPage.fillOtherGuardianEmail('other@example.com');
+    await enrollmentPage.fillOtherGuardianPhone('0501234567');
     await enrollmentPage.clickNext();
 
     // Back from step 8 to step 1
@@ -285,7 +333,9 @@ test.describe('Saved answers', () => {
 
     await enrollmentPage.verifyContactInfoStepVisible();
     await enrollmentPage.verifyGuardianEmail('guardian@example.com');
+    await expect(enrollmentPage.guardianPhoneInput).toHaveValue('0401234567');
     await enrollmentPage.verifyOtherGuardianEmail('other@example.com');
+    await expect(enrollmentPage.otherGuardianPhoneInput).toHaveValue('0501234567');
     await enrollmentPage.clickPrevious();
 
     await enrollmentPage.verifySupportNeedsStepVisible();
@@ -294,12 +344,13 @@ test.describe('Saved answers', () => {
     await enrollmentPage.clickPrevious();
 
     await enrollmentPage.verifyCareExtentStepVisible();
-    await enrollmentPage.verifyDaytimeCareExtentSelected('careExtent3to4Hours');
+    await enrollmentPage.verifyShiftCareExtentSelected('careExtent101to160Hours');
+    await enrollmentPage.verifyWeekdayAbsenceDays(3);
     await enrollmentPage.clickPrevious();
 
     await enrollmentPage.verifyStartAndCareNeedStepVisible();
     await enrollmentPage.verifyExtendedCareStartDate('1.8.2027');
-    await enrollmentPage.verifyDayAndEveningCareSelected();
+    await enrollmentPage.verifyShiftCareSelected();
     await enrollmentPage.clickPrevious();
 
     await enrollmentPage.verifyExtendedCareStepVisible();
@@ -315,26 +366,24 @@ test.describe('Saved answers', () => {
   });
 
   test('weekday absence days are shown when returning to step 5', async () => {
-    test.fail(true, 'VETY-176: absence days are saved but not shown when returning to step 5');
-
     await enrollmentPage.completeStep4();
 
     await enrollmentPage.selectDaytimeCareExtent('careExtent4to6Hours');
-    await enrollmentPage.setDaytimeCareWeekdayAbsenceDays(3);
+    await enrollmentPage.setWeekdayAbsenceDays(3);
     await enrollmentPage.clickNext();
 
     await enrollmentPage.verifySupportNeedsStepVisible();
     await enrollmentPage.clickPrevious();
 
     await enrollmentPage.verifyCareExtentStepVisible();
-    await enrollmentPage.verifyDaytimeCareWeekdayAbsenceDays(3);
+    await enrollmentPage.verifyWeekdayAbsenceDays(3);
   });
 
   test('weekday absence days are saved to draft', async ({ request }) => {
     await enrollmentPage.completeStep4();
 
     await enrollmentPage.selectDaytimeCareExtent('careExtent4to6Hours');
-    await enrollmentPage.setDaytimeCareWeekdayAbsenceDays(3);
+    await enrollmentPage.setWeekdayAbsenceDays(3);
     await enrollmentPage.clickNext();
 
     await enrollmentPage.verifySupportNeedsStepVisible();
@@ -344,12 +393,40 @@ test.describe('Saved answers', () => {
   });
 
   test('weekday absence days default is 0', async () => {
-    test.fail(true, 'VETY-176: absence days field has no default value 0');
-
     await enrollmentPage.completeStep4();
 
     await enrollmentPage.verifyCareExtentStepVisible();
-    await enrollmentPage.verifyDaytimeCareWeekdayAbsenceDays(0);
+    await enrollmentPage.verifyWeekdayAbsenceDays(0);
+  });
+
+  test('weekday absence days default is 0 after changing back to extended care', async () => {
+    test.fail(true, 'VETY-209: absence days have no default value after changing extended care to no and back to yes');
+
+    // Extended care with absence days
+    await enrollmentPage.completeStep4();
+    await enrollmentPage.selectDaytimeCareExtent('careExtent4to6Hours');
+    await enrollmentPage.setWeekdayAbsenceDays(3);
+    await enrollmentPage.clickNext();
+
+    // Change to no extended care and continue to the summary
+    await enrollmentPage.goToStep(3);
+    await enrollmentPage.selectNoExtendedCare();
+    await enrollmentPage.clickNext();
+    await enrollmentPage.clickNext();
+    await enrollmentPage.fillGuardianContactInfo();
+    await enrollmentPage.clickNext();
+    await enrollmentPage.verifyPreviewStepVisible();
+
+    // Change back to extended care
+    await enrollmentPage.goToStep(3);
+    await enrollmentPage.selectNeedsExtendedCare();
+    await enrollmentPage.clickNext();
+    await enrollmentPage.fillExtendedCareStartDate('01.08.2027');
+    await enrollmentPage.selectDaytimeCare();
+    await enrollmentPage.clickNext();
+
+    await enrollmentPage.verifyCareExtentStepVisible();
+    await enrollmentPage.verifyWeekdayAbsenceDays(0);
   });
 });
 
@@ -368,8 +445,6 @@ test.describe('Contact info', () => {
   });
 
   test('guardian email syntax is checked before saving', async ({ page }) => {
-    test.fail(true, 'VETY-203: email syntax is only checked by backend');
-
     const saveRequest = page
       .waitForRequest(
         (request) => request.method() === 'PUT' && request.url().includes('/preschool-application-form/'),
@@ -385,13 +460,10 @@ test.describe('Contact info', () => {
   });
 
   test('guardian email confirmation must match', async () => {
-    test.fail(true, 'VETY-183: confirmation email is not compared to guardian email');
-
     await enrollmentPage.guardianEmailInput.fill('guardian@example.com');
     await enrollmentPage.guardianEmailConfirmInput.fill('other@example.com');
     await enrollmentPage.clickNextExpectingError();
 
-    // With the bug the preview opens and the input is gone
     await expect(
       enrollmentPage.guardianEmailConfirmInput,
       'Confirmation email should show an error on step 7'
@@ -399,15 +471,82 @@ test.describe('Contact info', () => {
     await enrollmentPage.verifyCurrentStep(7);
   });
 
-  test('other guardian email is optional', async () => {
+  test('matching confirmation email shows no error while typing', async ({ page }) => {
+    test.fail(true, 'VETY-211: confirmation email shows emailRequired error until leaving the input, although it matches');
+
+    // Type like a user: email, Tab to the confirmation input, confirmation
+    await enrollmentPage.guardianEmailInput.pressSequentially('guardian@example.com');
+    await page.keyboard.press('Tab');
+    await page.keyboard.type('guardian@example.com');
+    await expect(enrollmentPage.guardianEmailConfirmInput).toBeFocused();
+
+    // The error appears a moment after typing, so let validation run before
+    // checking that there is none
+    await page.waitForTimeout(1000);
+    await expect(enrollmentPage.guardianEmailConfirmInput).toHaveAccessibleDescription('');
+  });
+
+  test('guardian phone number is required', async () => {
     await enrollmentPage.fillGuardianEmail('guardian@example.com');
+    await enrollmentPage.clickNextExpectingError();
+
+    await enrollmentPage.verifyGuardianPhoneHasError();
+    await enrollmentPage.verifyCurrentStep(7);
+  });
+
+  for (const phone of ['abc', '123']) {
+    test(`invalid guardian phone number "${phone}" is not accepted`, async () => {
+      await enrollmentPage.fillGuardianContactInfo('guardian@example.com', phone);
+      await enrollmentPage.clickNextExpectingError();
+
+      await enrollmentPage.verifyGuardianPhoneHasError();
+      await enrollmentPage.verifyCurrentStep(7);
+    });
+  }
+
+  for (const phone of ['0401234567', '040 123 4567', '+358401234567']) {
+    test(`guardian phone number "${phone}" is accepted`, async () => {
+      await enrollmentPage.fillGuardianContactInfo('guardian@example.com', phone);
+      await enrollmentPage.clickNext();
+
+      await enrollmentPage.verifyPreviewStepVisible();
+    });
+  }
+
+  test('other guardian contact info is optional', async () => {
+    await enrollmentPage.fillGuardianContactInfo();
     await enrollmentPage.clickNext();
 
     await enrollmentPage.verifyPreviewStepVisible();
   });
 
+  test('other guardian phone number without email is accepted', async () => {
+    await enrollmentPage.fillGuardianContactInfo();
+    await enrollmentPage.fillOtherGuardianPhone('0501234567');
+    await enrollmentPage.clickNext();
+
+    await enrollmentPage.verifyPreviewStepVisible();
+  });
+
+  test('other guardian email without phone number is accepted', async () => {
+    await enrollmentPage.fillGuardianContactInfo();
+    await enrollmentPage.fillOtherGuardianEmail('other@example.com');
+    await enrollmentPage.clickNext();
+
+    await enrollmentPage.verifyPreviewStepVisible();
+  });
+
+  test('invalid other guardian phone number is not accepted', async () => {
+    await enrollmentPage.fillGuardianContactInfo();
+    await enrollmentPage.fillOtherGuardianPhone('abc');
+    await enrollmentPage.clickNextExpectingError();
+
+    await enrollmentPage.verifyOtherGuardianPhoneHasError();
+    await enrollmentPage.verifyCurrentStep(7);
+  });
+
   test('invalid other guardian email is not accepted', async () => {
-    await enrollmentPage.fillGuardianEmail('guardian@example.com');
+    await enrollmentPage.fillGuardianContactInfo();
     await enrollmentPage.fillOtherGuardianEmail('abc');
     await enrollmentPage.clickNextExpectingError();
 
@@ -420,14 +559,11 @@ test.describe('Contact info', () => {
     { name: 'is required when email is given', confirmEmail: '' },
   ]) {
     test(`other guardian email confirmation ${name}`, async () => {
-      test.fail(true, 'VETY-183: confirmation email is not compared to guardian email');
-
-      await enrollmentPage.fillGuardianEmail('guardian@example.com');
+      await enrollmentPage.fillGuardianContactInfo();
       await enrollmentPage.otherGuardianEmailInput.fill('other@example.com');
       await enrollmentPage.otherGuardianEmailConfirmInput.fill(confirmEmail);
       await enrollmentPage.clickNextExpectingError();
 
-      // With the bug the preview opens and the input is gone
       await expect(
         enrollmentPage.otherGuardianEmailConfirmInput,
         'Confirmation email should show an error on step 7'
@@ -438,7 +574,7 @@ test.describe('Contact info', () => {
 });
 
 test.describe('Summary', () => {
-  test('summary shows the answers', async () => {
+  test('summary shows the answers for daytime care', async () => {
     const { summary } = enrollmentPage;
 
     // Step 1
@@ -454,19 +590,19 @@ test.describe('Summary', () => {
 
     // Step 4
     await enrollmentPage.fillExtendedCareStartDate('01.08.2027');
-    await enrollmentPage.selectDayAndEveningCare();
+    await enrollmentPage.selectDaytimeCare();
     await enrollmentPage.clickNext();
 
     // Step 5
     await enrollmentPage.selectDaytimeCareExtent('careExtent3to4Hours');
-    await enrollmentPage.setDaytimeCareWeekdayAbsenceDays(3);
+    await enrollmentPage.setWeekdayAbsenceDays(3);
     await enrollmentPage.clickNext();
 
     // Step 6: no support
     await enrollmentPage.clickNext();
 
     // Step 7
-    await enrollmentPage.fillGuardianEmail('guardian@example.com');
+    await enrollmentPage.fillGuardianContactInfo('guardian@example.com', '0401234567');
     await enrollmentPage.clickNext();
 
     await enrollmentPage.verifyPreviewStepVisible();
@@ -474,43 +610,78 @@ test.describe('Summary', () => {
     await expect(summary.languageSection).toContainText(summaryTexts.language.sv);
     await expect(enrollmentPage.summaryValue('extendedCareStart')).toHaveText('1.8.2027');
     await expect(enrollmentPage.summaryValue('extendedCareExtent')).toHaveText([
-      summaryTexts.careType.dayAndEveningCare,
+      summaryTexts.careType.daytimeCare,
       summaryTexts.careExtent.careExtent3to4Hours,
     ]);
+    await expect(enrollmentPage.summaryValue('absenceDays')).toHaveText('3');
     await expect(summary.supportSection).toContainText(summaryTexts.noSupport);
     await expect(summary.specialSupport).toBeHidden();
     await expect(summary.medicationNeed).toBeHidden();
     await expect(enrollmentPage.summaryValue('guardianName')).toHaveText(guardian.name);
     await expect(enrollmentPage.summaryValue('guardianEmail')).toHaveText('guardian@example.com');
+    await expect(enrollmentPage.summaryValue('guardianPhone')).toHaveText('0401234567');
+  });
+
+  test('summary shows the answers for shift care', async () => {
+    await enrollmentPage.completeStep3();
+
+    // Step 4
+    await enrollmentPage.fillExtendedCareStartDate('01.08.2027');
+    await enrollmentPage.selectShiftCare();
+    await enrollmentPage.clickNext();
+
+    // Step 5
+    await enrollmentPage.selectShiftCareExtent('careExtentOver160Hours');
+    await enrollmentPage.setWeekdayAbsenceDays(4);
+    await enrollmentPage.clickNext();
+
+    // Steps 6 and 7
+    await enrollmentPage.clickNext();
+    await enrollmentPage.fillGuardianContactInfo();
+    await enrollmentPage.clickNext();
+
+    await enrollmentPage.verifyPreviewStepVisible();
+
+    await expect(enrollmentPage.summaryValue('extendedCareStart')).toHaveText('1.8.2027');
+    await expect(enrollmentPage.summaryValue('extendedCareExtent')).toHaveText([
+      summaryTexts.careType.shiftCare,
+      summaryTexts.careExtent.careExtentOver160Hours,
+    ]);
+    await expect(enrollmentPage.summaryValue('absenceDays')).toHaveText('4');
+  });
+
+  test('summary shows no extended care', async () => {
+    await enrollmentPage.completeStep2();
+
+    // Step 3: steps 4 and 5 are skipped
+    await enrollmentPage.selectNoExtendedCare();
+    await enrollmentPage.clickNext();
+
+    // Steps 6 and 7
+    await enrollmentPage.clickNext();
+    await enrollmentPage.fillGuardianContactInfo();
+    await enrollmentPage.clickNext();
+
+    await enrollmentPage.verifyPreviewStepVisible();
+
+    await expect(enrollmentPage.summaryValue('extendedCareStart')).toHaveText(summaryTexts.empty);
+    await expect(enrollmentPage.summaryValue('extendedCareExtent')).toHaveText([summaryTexts.empty]);
+    await expect(enrollmentPage.summaryValue('absenceDays')).toHaveText(summaryTexts.empty);
   });
 
   test('summary shows the other guardian', async () => {
     await enrollmentPage.completeStep6();
-    await enrollmentPage.fillGuardianEmail('guardian@example.com');
+    await enrollmentPage.fillGuardianContactInfo('guardian@example.com', '0401234567');
     await enrollmentPage.fillOtherGuardianEmail('other@example.com');
+    await enrollmentPage.fillOtherGuardianPhone('0501234567');
     await enrollmentPage.clickNext();
 
     await enrollmentPage.verifyPreviewStepVisible();
     await expect(enrollmentPage.summary.otherGuardiansSection).toBeVisible();
     await expect(enrollmentPage.summaryValue('otherGuardianName')).toHaveText(otherGuardian.name);
     await expect(enrollmentPage.summaryValue('otherGuardianEmail')).toHaveText('other@example.com');
+    await expect(enrollmentPage.summaryValue('otherGuardianPhone')).toHaveText('0501234567');
     await expect(enrollmentPage.summaryValue('guardianEmail')).toHaveText('guardian@example.com');
-  });
-
-  test('summary shows weekday absence days', async () => {
-    test.fail(true, 'VETY-195: weekday absence days are not shown in the summary');
-
-    await enrollmentPage.completeStep4();
-    await enrollmentPage.selectDaytimeCareExtent('careExtent4to6Hours');
-    await enrollmentPage.setDaytimeCareWeekdayAbsenceDays(5);
-    await enrollmentPage.clickNext();
-    await enrollmentPage.clickNext();
-    await enrollmentPage.fillGuardianEmail('guardian@example.com');
-    await enrollmentPage.clickNext();
-
-    await enrollmentPage.verifyPreviewStepVisible();
-    // No testid for absence days in the summary yet: check label and value
-    await expect(enrollmentPage.summary.extendedCareSection).toContainText(/Arkipoissaolo[\s\S]*\b5\b/);
   });
 
   const supportCases = [
@@ -529,7 +700,7 @@ test.describe('Summary', () => {
       if (specialSupport) await enrollmentPage.selectSpecialSupport();
       if (medicationNeed) await enrollmentPage.selectMedicationNeed();
       await enrollmentPage.clickNext();
-      await enrollmentPage.fillGuardianEmail('guardian@example.com');
+      await enrollmentPage.fillGuardianContactInfo();
       await enrollmentPage.clickNext();
 
       await enrollmentPage.verifyPreviewStepVisible();
@@ -610,8 +781,9 @@ test.describe('Summary', () => {
 
       await enrollmentPage.verifyPreviewStepVisible();
       // Answers given by completeStep4 and completeStep5 are replaced with '–'
-      await expect(enrollmentPage.summaryValue('extendedCareStart')).toHaveText('–');
-      await expect(enrollmentPage.summaryValue('extendedCareExtent')).toHaveText(['–']);
+      await expect(enrollmentPage.summaryValue('extendedCareStart')).toHaveText(summaryTexts.empty);
+      await expect(enrollmentPage.summaryValue('extendedCareExtent')).toHaveText([summaryTexts.empty]);
+      await expect(enrollmentPage.summaryValue('absenceDays')).toHaveText(summaryTexts.empty);
 
       const application = await getApplication(request, enrollmentPage.applicationId());
       expect(application).toMatchObject({
@@ -619,8 +791,20 @@ test.describe('Summary', () => {
         taydentavaVarhaiskasvatusAloitus: null,
         hoidonTarve: '',
         palvelunTarve: '',
-        arkipoissaolotLkm: null,
       });
+    });
+
+    test('changing to no extended care clears absence days from draft', async ({ request }) => {
+      test.fail(true, 'VETY-209: absence days stay in the draft after selecting no extended care');
+
+      await enrollmentPage.editFromSummary(enrollmentPage.summary.editExtendedCareLink);
+      await enrollmentPage.selectNoExtendedCare();
+      await enrollmentPage.goToStep(7);
+      await enrollmentPage.clickNext();
+      await enrollmentPage.verifyPreviewStepVisible();
+
+      const application = await getApplication(request, enrollmentPage.applicationId());
+      expect(application.arkipoissaolotLkm).toBeNull();
     });
 
     test('stepper shows filled steps after logging in again', async () => {

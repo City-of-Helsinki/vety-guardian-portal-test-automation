@@ -61,16 +61,13 @@ export class PreschoolEnrollmentPage {
       .getByTestId('fieldset-aloitus-pvm')
       .getByRole('button');
 
+    // Care type decides which extents step 5 shows
     this.daytimeCareRadio = page.getByTestId(
       'rb-paivaaikainen_varhaiskasvatus'
     );
 
-    this.dayAndEveningCareRadio = page.getByTestId(
-      'rb-paiva_ja_ilta_aikainen_varhaiskasvatus_arkisin'
-    );
-
-    this.roundTheClockCareRadio = page.getByTestId(
-      'rb-ymparivuorokautinen_varhaiskasvatus'
+    this.shiftCareRadio = page.getByTestId(
+      'rb-vuorohoito_varhaiskasvatus'
     );
 
     // Step 5 - Varhaiskasvatuksen laajuus
@@ -78,12 +75,13 @@ export class PreschoolEnrollmentPage {
     this.careExtentHeading = page.getByTestId('step-varhaiskasvatuksen-laajuus-title');
 
     //
-    // Step 5 variants
+    // Step 5 variants: extents depend on the care type selected on step 4
     //
 
     const absenceDays = page.getByTestId('fieldset-arkipoissaolot');
 
     this.step5 = {
+      // Päiväaikainen varhaiskasvatus
       daytimeCare: {
         careExtentMax1Hour: page.getByTestId(
           'rb-esiopetus_4h_1h_vaka'
@@ -100,29 +98,37 @@ export class PreschoolEnrollmentPage {
         careExtent4to6Hours: page.getByTestId(
           'rb-esiopetus_4h_4_6h_vaka'
         ),
+      },
 
-        weekdayAbsenceDaysInput: page.getByTestId(
-          'input-arki-poissaolot'
+      // Vuorohoito: hours per month
+      shiftCare: {
+        careExtent61to100Hours: page.getByTestId(
+          'rb-esiopetus_4h_61_100h_vuoroh'
         ),
 
-        decreaseAbsenceDaysButton: absenceDays.getByRole(
-          'button',
-          { name: 'Decrease by one' }
+        careExtent101to160Hours: page.getByTestId(
+          'rb-esiopetus_4h_101_160h_vuoroh'
         ),
 
-        increaseAbsenceDaysButton: absenceDays.getByRole(
-          'button',
-          { name: 'Increase by one' }
+        careExtentOver160Hours: page.getByTestId(
+          'rb-esiopetus_4h_160h_vuoroh'
         ),
       },
 
-      dayAndEveningCare: {
-        // To be added later
-      },
+      // Same for both care types
+      weekdayAbsenceDaysInput: page.getByTestId(
+        'input-arki-poissaolot'
+      ),
 
-      roundTheClockCare: {
-        // To be added later
-      },
+      decreaseAbsenceDaysButton: absenceDays.getByRole(
+        'button',
+        { name: 'Decrease by one' }
+      ),
+
+      increaseAbsenceDaysButton: absenceDays.getByRole(
+        'button',
+        { name: 'Increase by one' }
+      ),
     };
 
     // Step 6 - Tuki ja lääkehoidon tarve
@@ -140,6 +146,9 @@ export class PreschoolEnrollmentPage {
     this.guardianEmailConfirmInput = page.getByTestId('input-h1-sahkoposti-confirm');
     this.otherGuardianEmailInput = page.getByTestId('input-h2-sahkoposti');
     this.otherGuardianEmailConfirmInput = page.getByTestId('input-h2-sahkoposti-confirm');
+    // Guardian's phone number is required, other guardian's is optional
+    this.guardianPhoneInput = page.getByTestId('input-h1-puhelinnumero');
+    this.otherGuardianPhoneInput = page.getByTestId('input-h2-puhelinnumero');
 
     // Step 8 - Esikatselu ja lähetys
 
@@ -182,9 +191,11 @@ export class PreschoolEnrollmentPage {
       guardianName: 'h1-nimi',
       guardianAddress: 'h1-osoite',
       guardianPhone: 'h1-puhelinnumero',
+      absenceDays: 'arkipoissaolot',
       guardianEmail: 'h1-sahkoposti',
       otherGuardianName: 'h2-nimi',
       otherGuardianAddress: 'h2-osoite',
+      otherGuardianPhone: 'h2-puhelinnumero',
       otherGuardianEmail: 'h2-sahkoposti',
     };
   }
@@ -199,16 +210,25 @@ export class PreschoolEnrollmentPage {
     await expect(this.pageHeading).toBeVisible();
   }
 
+  // Leaving an input can change the layout (validation messages appear or
+  // disappear) and move the buttons. Leave it before clicking, like a user
+  // does, so the click is not lost.
+  async leaveFocusedInput() {
+    await this.page.evaluate(() => document.activeElement?.blur());
+  }
+
   // Each step is saved to backend before the next one opens, so wait for the
   // step to change before continuing
   async clickNext() {
     const step = await this.currentStep.getAttribute('aria-label');
+    await this.leaveFocusedInput();
     await this.nextButton.click();
     await expect(this.currentStep, 'Next step should open').not.toHaveAttribute('aria-label', step);
   }
 
   // For validation tests: click next when the step should not change
   async clickNextExpectingError() {
+    await this.leaveFocusedInput();
     await this.nextButton.click();
   }
 
@@ -357,66 +377,85 @@ export class PreschoolEnrollmentPage {
     await this.selectRadioByTestId('rb-paivaaikainen_varhaiskasvatus');
   }
 
-  async selectDayAndEveningCare() {
-    await this.selectRadioByTestId('rb-paiva_ja_ilta_aikainen_varhaiskasvatus_arkisin');
-  }
-
-  async selectRoundTheClockCare() {
-    await this.selectRadioByTestId('rb-ymparivuorokautinen_varhaiskasvatus');
+  async selectShiftCare() {
+    await this.selectRadioByTestId('rb-vuorohoito_varhaiskasvatus');
   }
 
   async verifyDaytimeCareSelected() {
     await expect(this.daytimeCareRadio).toBeChecked();
   }
 
-  async verifyDayAndEveningCareSelected() {
-    await expect(this.dayAndEveningCareRadio).toBeChecked();
+  async verifyShiftCareSelected() {
+    await expect(this.shiftCareRadio).toBeChecked();
   }
 
-  async verifyRoundTheClockCareSelected() {
-    await expect(this.roundTheClockCareRadio).toBeChecked();
-  }
   // Step 5 /////////////////////////////////////////////////////
-  //
-  // Step 5 - Daytime care variant
-  //
   async verifyCareExtentStepVisible() {
     await expect(this.careExtentHeading).toBeVisible();
   }
 
-  async setDaytimeCareWeekdayAbsenceDays(days) {
-    await this.step5.daytimeCare.weekdayAbsenceDaysInput.fill(
-      String(days)
-    );
+  async setWeekdayAbsenceDays(days) {
+    await this.step5.weekdayAbsenceDaysInput.fill(String(days));
   }
 
-  async verifyDaytimeCareWeekdayAbsenceDays(days) {
-    await expect(this.step5.daytimeCare.weekdayAbsenceDaysInput).toHaveValue(
-      String(days)
-    );
+  async verifyWeekdayAbsenceDays(days) {
+    await expect(this.step5.weekdayAbsenceDaysInput).toHaveValue(String(days));
   }
 
-  async increaseDaytimeCareWeekdayAbsenceDays() {
-    await this.step5.daytimeCare.increaseAbsenceDaysButton.click();
+  async increaseWeekdayAbsenceDays() {
+    await this.step5.increaseAbsenceDaysButton.click();
   }
 
-  async decreaseDaytimeCareWeekdayAbsenceDays() {
-    await this.step5.daytimeCare.decreaseAbsenceDaysButton.click();
+  async decreaseWeekdayAbsenceDays() {
+    await this.step5.decreaseAbsenceDaysButton.click();
   }
 
   //
-  // Generic helpers
+  // Step 5 - Daytime care variant
   //
 
   // Usage: await page.selectDaytimeCareExtent('careExtent4to6Hours');
   async selectDaytimeCareExtent(extent) {
     await this.selectRadio(this.step5.daytimeCare[extent]);
   }
-  
+
   async verifyDaytimeCareExtentSelected(extent) {
     await expect(
       this.step5.daytimeCare[extent]
     ).toBeChecked();
+  }
+
+  // Only the daytime care extents are shown
+  async verifyDaytimeCareExtentsVisible() {
+    for (const radio of Object.values(this.step5.daytimeCare)) {
+      await expect(radio).toBeVisible();
+    }
+    for (const radio of Object.values(this.step5.shiftCare)) {
+      await expect(radio).toBeHidden();
+    }
+  }
+
+  //
+  // Step 5 - Shift care variant
+  //
+
+  // Usage: await page.selectShiftCareExtent('careExtent101to160Hours');
+  async selectShiftCareExtent(extent) {
+    await this.selectRadio(this.step5.shiftCare[extent]);
+  }
+
+  async verifyShiftCareExtentSelected(extent) {
+    await expect(this.step5.shiftCare[extent]).toBeChecked();
+  }
+
+  // Only the shift care extents are shown
+  async verifyShiftCareExtentsVisible() {
+    for (const radio of Object.values(this.step5.shiftCare)) {
+      await expect(radio).toBeVisible();
+    }
+    for (const radio of Object.values(this.step5.daytimeCare)) {
+      await expect(radio).toBeHidden();
+    }
   }
 
   // Step 6 /////////////////////////////////////////////////////
@@ -471,6 +510,20 @@ export class PreschoolEnrollmentPage {
     await this.otherGuardianEmailConfirmInput.fill(email);
   }
 
+  async fillGuardianPhone(phone) {
+    await this.guardianPhoneInput.fill(phone);
+  }
+
+  async fillOtherGuardianPhone(phone) {
+    await this.otherGuardianPhoneInput.fill(phone);
+  }
+
+  // Fills the required contact info of the guardian
+  async fillGuardianContactInfo(email = 'test@example.com', phone = '0401234567') {
+    await this.fillGuardianEmail(email);
+    await this.fillGuardianPhone(phone);
+  }
+
   async verifyGuardianEmail(email) {
     await expect(this.guardianEmailInput).toHaveValue(email);
     await expect(this.guardianEmailConfirmInput).toHaveValue(email);
@@ -493,6 +546,14 @@ export class PreschoolEnrollmentPage {
 
   async verifyOtherGuardianEmailHasError() {
     await expect(this.otherGuardianEmailInput).toHaveAccessibleDescription(/\S/);
+  }
+
+  async verifyGuardianPhoneHasError() {
+    await expect(this.guardianPhoneInput).toHaveAccessibleDescription(/\S/);
+  }
+
+  async verifyOtherGuardianPhoneHasError() {
+    await expect(this.otherGuardianPhoneInput).toHaveAccessibleDescription(/\S/);
   }
 
   // Step 8 /////////////////////////////////////////////////////
@@ -558,7 +619,7 @@ export class PreschoolEnrollmentPage {
       'careExtent4to6Hours'
     );
 
-    await this.setDaytimeCareWeekdayAbsenceDays(2);
+    await this.setWeekdayAbsenceDays(2);
 
     await this.clickNext();
   }
@@ -569,10 +630,10 @@ export class PreschoolEnrollmentPage {
     await this.clickNext();
   }
 
-  async completeStep7(guardianEmail = 'test@example.com') {
+  async completeStep7(guardianEmail = 'test@example.com', guardianPhone = '0401234567') {
     await this.completeStep6();
 
-    await this.fillGuardianEmail(guardianEmail);
+    await this.fillGuardianContactInfo(guardianEmail, guardianPhone);
     await this.clickNext();
   }
 
