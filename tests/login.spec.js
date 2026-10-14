@@ -11,7 +11,7 @@ test.describe("HKI-Vety Guardian Portal Login Page", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto(selectors.mainPagePath);
     const languageSelector = new LanguageSelector(page);
-    await languageSelector.select('fi');  // By default goes to english language regardless of locale
+    await languageSelector.select('fi');  // Default follows browser language. Select Finnish so tests don't depend on it.
   });
   
   test("Login page: Check elements", async ({ page }) => {
@@ -61,5 +61,41 @@ test.describe("HKI-Vety Guardian Portal Login Page", () => {
     await test.step("Check header text", async () => {
       await expect(page.getByRole('link', { name: 'test' })).toBeVisible();
     });
+  });
+});
+
+// No language is selected here: the default comes from the browser language
+test.describe("Default language", () => {
+  const browserLanguages = [
+    { locale: 'fi-FI', language: 'fi' },
+    { locale: 'sv-SE', language: 'sv' },
+    { locale: 'en-US', language: 'en' },
+    // Not supported: falls back to Finnish
+    { locale: 'de-DE', language: 'fi' },
+  ];
+
+  for (const { locale, language } of browserLanguages) {
+    test.describe(`Browser language ${locale}`, () => {
+      test.use({ locale });
+
+      test(`opens in ${language}`, async ({ page }) => {
+        const languageSelector = new LanguageSelector(page);
+        await page.goto(selectors.mainPagePath);
+
+        await languageSelector.expectCurrentLanguage(language);
+        await languageSelector.expectPageLanguage(language);
+      });
+    });
+  }
+
+  test("page language follows selected language", async ({ page }) => {
+    const languageSelector = new LanguageSelector(page);
+    await page.goto(selectors.mainPagePath);
+
+    for (const language of ['sv', 'en', 'fi']) {
+      await languageSelector.select(language);
+      await languageSelector.expectCurrentLanguage(language);
+      await languageSelector.expectPageLanguage(language);
+    }
   });
 });

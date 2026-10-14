@@ -32,7 +32,7 @@ test.beforeEach(async ({ page }) => {
   enrollmentPage = new PreschoolEnrollmentPage(page);
 
   await loginPage.open();
-  await languageSelector.select('fi');  // By default goes to english language regardless of locale
+  await languageSelector.select('fi');  // Default follows browser language. Select Finnish so tests don't depend on it.
   await loginPage.loginAs(guardian);
   childBirthDate = await landingPage.childBirthDate(child);
   await landingPage.openApplication(child);

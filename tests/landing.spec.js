@@ -13,7 +13,7 @@ test.describe("HKI-Vety Guardian Portal Landing Page", () => {
     loginPage = new LoginPage(page);
     landingPage = new LandingPage(page);
     await loginPage.open();
-    await languageSelector.select('fi');  // By default goes to english language regardless of locale
+    await languageSelector.select('fi');  // Default follows browser language. Select Finnish so tests don't depend on it.
   });
 
   test("Landing page: Check elements", async ({ page }) => {
