@@ -38,6 +38,11 @@ export class LanguageSelector {
     await expect(this.button('en')).toHaveText('English');
   }
 
+  // <html lang> tells e.g. screen readers which language the page is in
+  async expectPageLanguage(languageCode) {
+    await expect(this.page.locator('html')).toHaveAttribute('lang', languageCode);
+  }
+
   async expectButtonLabel(languageCode, expectedLabel) {
     await expect(this.button(languageCode)).toHaveText(expectedLabel);
   }
