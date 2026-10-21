@@ -1,20 +1,19 @@
-// Mock users on the login page
+// Test people from DVV's test data (https://testiaineisto.fi/testiaineistorivit/henkilot).
+// They log in with the suomi.fi test identification, and the backend's VTJ mock
+// has the same family: mother and father are both guardians of the child.
 export const users = {
-  parent: {
-    name: 'Parent Example',
-    ssn: '010170-999X',
-    children: ['Child Example', 'OtherChild Example'],
+  mother: {
+    key: 'mother',
+    name: 'Joanna Melina Haapakoski Testihenkilo',
+    firstName: 'Joanna',
+    ssn: '140904A998H',
+    children: ['Veeti Konrad Kauriaistes Testihenkilo'],
   },
-  // Other guardian of Child Example
-  otherParent: {
-    name: 'OtherParent Example',
-    ssn: '010101-0101',
-    children: ['Child Example'],
-  },
-  // Has turvakielto (security restriction): shows a notification, no children
-  protectedPerson: {
-    name: 'Person Protected',
-    ssn: '010101-0102',
-    children: [],
+  father: {
+    key: 'father',
+    name: 'Elias Kumpulainen Testihenkilo',
+    firstName: 'Elias',
+    ssn: '060999-951B',
+    children: ['Veeti Konrad Kauriaistes Testihenkilo'],
   },
 };

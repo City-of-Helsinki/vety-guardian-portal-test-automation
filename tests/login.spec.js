@@ -24,15 +24,12 @@ test.describe("HKI-Vety Guardian Portal Login Page", () => {
       await expect(new LoginPage(page).heading).toHaveText(loginPage.heading.fi);
     });
 
-    await test.step("Check login buttons", async () => {
-      const login = new LoginPage(page);
-      for (const user of Object.values(users)) {
-        await expect(login.loginButton(user)).toBeVisible();
-      }
+    await test.step("Check login button", async () => {
+      await expect(new LoginPage(page).loginButton).toBeVisible();
     });
 
     await test.step("Check login", async () => {
-      await new LoginPage(page).loginAs(users.parent);
+      await new LoginPage(page).loginAs(users.mother);
       await expect(new LandingPage(page).heading).toHaveText('landing.title');
     });
   });
@@ -55,6 +52,25 @@ test.describe("HKI-Vety Guardian Portal Login Page", () => {
       await languageSelector.expectCurrentLanguage('fi');
       await expect(new LoginPage(page).heading).toHaveText(loginPage.heading.fi);
     });
+  });
+
+  test("Login page: Log in with suomi.fi test identification", async ({ page }) => {
+    const loginPage = new LoginPage(page);
+
+    // Without the saved session, Helsinki-profiili sends the user to suomi.fi
+    await loginPage.loginAs(users.mother, { useSavedSession: false });
+    await expect(new LandingPage(page).heading).toHaveText('landing.title');
+  });
+
+  test("Login page: Log out", async ({ page }) => {
+    const loginPage = new LoginPage(page);
+    // Own login session: logging out ends the session, so the saved one can't be used
+    await loginPage.loginAs(users.mother, { useSavedSession: false });
+
+    await loginPage.logout();
+
+    await loginPage.verifyPageLoaded();
+    await expect(loginPage.loggedInUser).toBeHidden();
   });
 
   test("Login page: Check header", async ({ page }) => {

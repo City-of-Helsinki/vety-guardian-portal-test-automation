@@ -48,7 +48,7 @@ export class PreschoolEnrollmentPage {
     this.needsExtendedCareRadio = page.getByTestId('rb-extended-care');
     this.noExtendedCareRadio = page.getByTestId('rb-no-extended-care');
 
-    this.varhaiskasvatusmaksutLink = page.getByTestId('link-vk-maksut');
+    this.varhaiskasvatusmaksutLink = page.getByTestId('text-taydentava-link');
 
     // Step 4 - Aloituspäivä ja hoidon tarve
     this.startAndCareNeedHeading = page.getByTestId('step-hoidon-tarve-title');
