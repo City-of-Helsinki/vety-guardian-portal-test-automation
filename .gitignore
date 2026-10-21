@@ -41,3 +41,6 @@ playwright.yml
 
 # Cursor IDE
 .cursor/
+
+# Claude Code personal settings
+.claude/settings.local.json
