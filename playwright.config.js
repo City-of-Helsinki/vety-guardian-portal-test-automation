@@ -30,7 +30,8 @@ export default defineConfig({
   ],
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
-    baseURL: process.env.BASE_URL || "http://127.0.0.1:5173",
+    // Must be localhost: it is the address registered for the Helsinki-profiili login
+    baseURL: process.env.BASE_URL || "http://localhost:5173",
     trace: 'on-first-retry',
     headless: true,
     launchOptions: {
@@ -38,7 +39,6 @@ export default defineConfig({
     },
     screenshot: "only-on-failure",
     locale: 'fi-FI',
-    w: 4
   },
   expect: {
     timeout: 5000, // Default expect timeout (can be overridden per assertion)
@@ -46,9 +46,15 @@ export default defineConfig({
 
   /* Configure projects for major browsers */
   projects: [
+    // Logs in the test users once and saves their sessions (tests/auth.setup.js)
+    {
+      name: 'setup',
+      testMatch: /.*\.setup\.js/,
+    },
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
+      dependencies: ['setup'],
     },
 
     // {

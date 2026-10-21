@@ -8,11 +8,10 @@ import { summaryTexts } from '../test-data/summaryTexts';
 import { clearPreschoolApplications } from '../utils/db';
 import { getApplication } from '../utils/api';
 
-// Child used only by these tests. Has two guardians, so step 7 and the
-// summary also show the other guardian.
-const guardian = users.parent;
-const otherGuardian = users.otherParent;
-const child = 'Child Example';
+// The child has two guardians, so step 7 and the summary also show the other guardian
+const guardian = users.mother;
+const otherGuardian = users.father;
+const child = guardian.children[0];
 
 // Every step saves the form to backend, so run all tests in this file one at
 // a time and start each one from an empty application table
@@ -21,7 +20,7 @@ test.describe.configure({ mode: 'default' });
 let loginPage;
 let landingPage;
 let enrollmentPage;
-let childBirthDate; // As shown on the landing page, e.g. '1.1.2015'
+let childBirthDate; // As shown on the landing page, e.g. '4.2.2020'
 
 test.beforeEach(async ({ page }) => {
   clearPreschoolApplications();
@@ -379,7 +378,7 @@ test.describe('Saved answers', () => {
     await enrollmentPage.verifyWeekdayAbsenceDays(3);
   });
 
-  test('weekday absence days are saved to draft', async ({ request }) => {
+  test('weekday absence days are saved to draft', async ({ page }) => {
     await enrollmentPage.completeStep4();
 
     await enrollmentPage.selectDaytimeCareExtent('careExtent4to6Hours');
@@ -388,7 +387,7 @@ test.describe('Saved answers', () => {
 
     await enrollmentPage.verifySupportNeedsStepVisible();
 
-    const application = await getApplication(request, enrollmentPage.applicationId());
+    const application = await getApplication(page, enrollmentPage.applicationId());
     expect(application.arkipoissaolotLkm).toBe(3);
   });
 
@@ -400,8 +399,6 @@ test.describe('Saved answers', () => {
   });
 
   test('weekday absence days default is 0 after changing back to extended care', async () => {
-    test.fail(true, 'VETY-209: absence days have no default value after changing extended care to no and back to yes');
-
     // Extended care with absence days
     await enrollmentPage.completeStep4();
     await enrollmentPage.selectDaytimeCareExtent('careExtent4to6Hours');
@@ -472,8 +469,6 @@ test.describe('Contact info', () => {
   });
 
   test('invalid email does not block moving forward from previous step', async ({ page }) => {
-    test.fail(true, 'VETY-211: invalid email is saved when going back from step 7, and backend error blocks moving forward without an error in the UI');
-
     const saveResponses = [];
     page.on('response', (response) => {
       if (response.request().method() === 'PUT' && response.url().includes('/preschool-application-form/')) {
@@ -492,8 +487,6 @@ test.describe('Contact info', () => {
   });
 
   test('matching confirmation email shows no error while typing', async ({ page }) => {
-    test.fail(true, 'VETY-211: confirmation email shows emailRequired error until leaving the input, although it matches');
-
     // Type like a user: email, Tab to the confirmation input, confirmation
     await enrollmentPage.guardianEmailInput.pressSequentially('guardian@example.com');
     await page.keyboard.press('Tab');
@@ -712,8 +705,6 @@ test.describe('Summary', () => {
 
   for (const { name, specialSupport, medicationNeed } of supportCases) {
     test(`summary shows ${name}`, async () => {
-      test.fail(true, 'VETY-199: special support and medication need texts are swapped in the summary');
-
       const { summary } = enrollmentPage;
 
       await enrollmentPage.completeStep5();
@@ -791,7 +782,7 @@ test.describe('Summary', () => {
       await enrollmentPage.verifyPreviewStepVisible();
     });
 
-    test('changing to no extended care clears steps 4 and 5 from summary', async ({ request }) => {
+    test('changing to no extended care clears steps 4 and 5 from summary', async ({ page }) => {
       const { summary } = enrollmentPage;
 
       await enrollmentPage.editFromSummary(summary.editExtendedCareLink);
@@ -805,7 +796,7 @@ test.describe('Summary', () => {
       await expect(enrollmentPage.summaryValue('extendedCareExtent')).toHaveText([summaryTexts.empty]);
       await expect(enrollmentPage.summaryValue('absenceDays')).toHaveText(summaryTexts.empty);
 
-      const application = await getApplication(request, enrollmentPage.applicationId());
+      const application = await getApplication(page, enrollmentPage.applicationId());
       expect(application).toMatchObject({
         taydentavaVarhaiskasvatus: false,
         taydentavaVarhaiskasvatusAloitus: null,
@@ -814,8 +805,8 @@ test.describe('Summary', () => {
       });
     });
 
-    test('changing to no extended care clears absence days from draft', async ({ request }) => {
-      test.fail(true, 'VETY-209: absence days stay in the draft after selecting no extended care');
+    test('changing to no extended care clears absence days from draft', async ({ page }) => {
+      test.fail(true, 'VETY-209: absence days are no longer sent when no extended care is selected, so backend keeps the earlier value');
 
       await enrollmentPage.editFromSummary(enrollmentPage.summary.editExtendedCareLink);
       await enrollmentPage.selectNoExtendedCare();
@@ -823,13 +814,12 @@ test.describe('Summary', () => {
       await enrollmentPage.clickNext();
       await enrollmentPage.verifyPreviewStepVisible();
 
-      const application = await getApplication(request, enrollmentPage.applicationId());
+      const application = await getApplication(page, enrollmentPage.applicationId());
       expect(application.arkipoissaolotLkm).toBeNull();
     });
 
-    test('stepper shows filled steps after logging in again', async () => {
-      await loginPage.open();
-      await loginPage.loginAs(guardian);
+    test('stepper shows filled steps when the application is opened again', async () => {
+      await landingPage.open();
       await landingPage.openApplication(child);
 
       await enrollmentPage.verifyCurrentStep(1);
@@ -863,14 +853,14 @@ test.describe('Preview and sending', () => {
     await expect(enrollmentPage.summaryValue('guardianEmail')).toHaveText(guardianEmail);
   });
 
-  test('sending application returns to login page', async ({ request }) => {
+  test('sending application returns to landing page', async ({ page }) => {
     const applicationId = enrollmentPage.applicationId();
 
     await enrollmentPage.sendApplication();
 
-    await loginPage.verifyPageLoaded();
+    await landingPage.verifyPageLoaded();
 
-    const application = await getApplication(request, applicationId);
+    const application = await getApplication(page, applicationId);
     expect(application.status).toBe('submitted');
   });
 
@@ -878,9 +868,8 @@ test.describe('Preview and sending', () => {
     const applicationId = enrollmentPage.applicationId();
 
     await enrollmentPage.sendApplication();
-    await loginPage.verifyPageLoaded();
+    await landingPage.verifyPageLoaded();
 
-    await loginPage.loginAs(guardian);
     await landingPage.openApplication(child);
 
     expect(enrollmentPage.applicationId()).toBe(applicationId);

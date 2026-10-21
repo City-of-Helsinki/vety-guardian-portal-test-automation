@@ -15,6 +15,16 @@ export class LandingPage {
     this.noChildrenText = page.getByTestId('text-no-dependants');
   }
 
+  async open() {
+    await this.page.goto('/landing');
+    await this.verifyPageLoaded();
+  }
+
+  async verifyPageLoaded() {
+    await expect(this.page).toHaveURL(/\/landing$/);
+    await expect(this.heading).toBeVisible();
+  }
+
   // Card of one child
   child(childName) {
     return this.children.filter({
