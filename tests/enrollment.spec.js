@@ -5,8 +5,7 @@ import { LandingPage } from '../components/LandingPage';
 import { PreschoolEnrollmentPage } from '../components/PreschoolEnrollmentPage';
 import { users } from '../test-data/users';
 import { summaryTexts } from '../test-data/summaryTexts';
-import { clearPreschoolApplications } from '../utils/db';
-import { getApplication } from '../utils/api';
+import { deleteApplications, getApplication } from '../utils/api';
 
 // The child has two guardians, so step 7 and the summary also show the other guardian
 const guardian = users.mother;
@@ -14,7 +13,7 @@ const otherGuardian = users.father;
 const child = guardian.children[0];
 
 // Every step saves the form to backend, so run all tests in this file one at
-// a time and start each one from an empty application table
+// a time and start each one with no applications for the guardian
 test.describe.configure({ mode: 'default' });
 
 let loginPage;
@@ -22,8 +21,8 @@ let landingPage;
 let enrollmentPage;
 let childBirthDate; // As shown on the landing page, e.g. '4.2.2020'
 
-test.beforeEach(async ({ page }) => {
-  clearPreschoolApplications();
+test.beforeEach(async ({ page, request }) => {
+  await deleteApplications(request, guardian.ssn);
 
   loginPage = new LoginPage(page);
   landingPage = new LandingPage(page);
