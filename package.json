@@ -8,7 +8,9 @@
     "test:headed": "npx playwright test --headed",
     "test:ui": "npx playwright test --ui",
     "test:debug": "npx playwright test --debug",
-    "report": "npx playwright show-report"
+    "report": "npx playwright show-report",
+    "clear-applications": "node scripts/test-data.mjs delete-all",
+    "delete-applications": "node scripts/test-data.mjs delete"
   },
   "repository": {
     "type": "git",

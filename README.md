@@ -6,9 +6,8 @@ Playwright end-to-end tests for the Vety guardian portal — covering login, the
 
 - **Node.js** (LTS recommended)
 - **Guardian portal frontend** running and reachable at `http://localhost:5173` (use `localhost`: it is the address registered for the Helsinki-profiili login)
-- **Guardian portal backend** running and reachable (default `http://localhost:8001`), with `DEBUG=True` in its `.env`
-- **Backend repo** checked out next to this repo as `../vety-guardian-portal-back`, or set `BACKEND_DIR` (see Environment Variables below)
-- **uv** installed — the tests run backend management commands with `uv run python manage.py ...`
+- **Guardian portal backend** running and reachable (default `http://localhost:8001`), with the test-data API on: `TEST_DATA_API_ENABLED=True` and a `TEST_DATA_API_KEY` in its `.env`
+- **`.env`** in this repo with the same key: `TEST_DATA_API_KEY=...` (gitignored, loaded by `playwright.config.js`)
 
 ## Login
 
@@ -17,7 +16,7 @@ The tests log in like a user: Helsinki-profiili with the suomi.fi test identific
 - `tests/auth.setup.js` runs first (`setup` project). It logs in each test user once through suomi.fi and saves the Helsinki-profiili session cookies to `playwright/.auth/` (not committed).
 - `LoginPage.loginAs(user)` uses the saved session, so the tests only click "Kirjaudu sisään" and skip suomi.fi. If the backend rejects the login ("Tunnistautuminen epäonnistui"), it reloads the page once.
 
-> **Note:** The enrollment tests delete **all** preschool applications (drafts and sent ones) from the local backend before every test. They use the backend command `db_delete_all_PreschoolApplication`, which only runs when the backend's `DEBUG` setting is `True`.
+> **Note:** Before every test, the enrollment tests delete the test guardian's preschool applications (drafts and sent ones) from the local backend with the test-data API (`POST /test-data/delete/`). `clearPreschoolApplications()` in `utils/api.js` deletes all applications (`POST /test-data/delete-all/`).
 
 ## Getting Started
 
@@ -67,16 +66,28 @@ npx playwright test tests/landing.spec.js
 
 ### Enrollment Tests
 
-- Every step of the form is saved to the backend, so the tests in `tests/enrollment.spec.js` run one at a time and each test starts from an empty application table. Don't run them with `--repeat-each`: the copies run in parallel and clear each other's data.
+- Every step of the form is saved to the backend, so the tests in `tests/enrollment.spec.js` run one at a time and each test starts with no applications for the test guardian. Don't run them with `--repeat-each`: the copies run in parallel and delete each other's data.
 - Known bugs are marked with `test.fail(...)`, with the Jira ticket key in the description (e.g. `VETY-176`). These tests are reported as passed while the bug exists. When the bug is fixed, the test fails with "expected to fail, but passed" — then remove its `test.fail(...)` line.
+
+### Deleting Test Data Manually
+
+The same test-data API can be called from the terminal (uses `API_URL` and `TEST_DATA_API_KEY` from `.env`):
+
+```bash
+# Delete all preschool applications
+npm run clear-applications
+
+# Delete the applications (and VTJ records) of one child or guardian
+npm run delete-applications -- 140904A998H
+```
 
 ## Environment Variables
 
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `BASE_URL` | `http://localhost:5173` | URL where the guardian portal frontend is running |
-| `API_URL` | `http://localhost:8001` | URL where the backend is running. Used to get the saved application form |
-| `BACKEND_DIR` | `../vety-guardian-portal-back` | Path to the backend repo. Used to clear applications from the database |
+| `API_URL` | `http://localhost:8001` | URL where the backend is running. Used to get the saved application form and delete test data |
+| `TEST_DATA_API_KEY` | — | Key for the backend's test-data API, used to delete applications. Set it in `.env` |
 
 ## Test Reports
 
@@ -92,6 +103,7 @@ After a run, results are available in `playwright-report/`:
 | `tests/` | Test specs |
 | `components/` | Page objects |
 | `test-data/` | Test users, expected texts etc |
-| `utils/` | Helpers (db, api, ...) |
+| `utils/` | Helpers (api, ...) |
+| `scripts/` | Command-line scripts run with `npm run` |
 | `playwright.config.js` | Playwright configuration |
 | `playwright/.auth/` | Saved login sessions (created by `tests/auth.setup.js`, not committed) |
