@@ -16,20 +16,6 @@ export class PreschoolEnrollmentPage {
     // Step 1 - Alku
     this.startHeading = page.getByTestId('step-alku-title');
 
-    this.privatePreschoolCheckbox = page.getByTestId('cb-hakenut-yksityiseen');
-
-    // Accordion
-    this.addressChangeAccordionContainer = page.getByTestId('accordion-osoitemuutos');
-
-    this.addressChangeAccordion = this.addressChangeAccordionContainer.getByRole('button', {
-      name: 'Onko lapsen kotiosoite muuttumassa?',
-    });
-
-    // Close button testid has a generated accordion id, e.g. accordion-9-closeButton
-    this.closeAddressChangeAccordion = this.addressChangeAccordionContainer.getByTestId(
-      /-closeButton$/
-    );
-
     // Navigation buttons
     this.previousButton = page.getByTestId('btn-previous');
     this.nextButton = page.getByTestId('btn-next');
@@ -286,27 +272,6 @@ export class PreschoolEnrollmentPage {
       const id = await checkbox.getAttribute('id');
       await this.page.locator(`label[for="${id}"]`).click();
     }
-  }
- 
-  // Step 1 /////////////////////////////////////////////////////
-  async checkPrivatePreschoolApplication() {
-    await this.privatePreschoolCheckbox.check();
-  }
-
-  async uncheckPrivatePreschoolApplication() {
-    await this.privatePreschoolCheckbox.uncheck();
-  }
-
-  async verifyPrivatePreschoolApplicationChecked() {
-    await expect(this.privatePreschoolCheckbox).toBeChecked();
-  }
-
-  async openAddressChangeAccordion() {
-    await this.addressChangeAccordion.click();
-  }
-
-  async closeAddressChangeInfo() {
-    await this.closeAddressChangeAccordion.click();
   }
  
   // Step 2 /////////////////////////////////////////////////////

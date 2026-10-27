@@ -30,7 +30,7 @@ test.describe("HKI-Vety Guardian Portal Login Page", () => {
 
     await test.step("Check login", async () => {
       await new LoginPage(page).loginAs(users.mother);
-      await expect(new LandingPage(page).heading).toHaveText('landing.title');
+      await expect(new LandingPage(page).heading).toHaveText('Etusivu');
     });
   });
 
@@ -59,7 +59,7 @@ test.describe("HKI-Vety Guardian Portal Login Page", () => {
 
     // Without the saved session, Helsinki-profiili sends the user to suomi.fi
     await loginPage.loginAs(users.mother, { useSavedSession: false });
-    await expect(new LandingPage(page).heading).toHaveText('landing.title');
+    await expect(new LandingPage(page).heading).toHaveText('Etusivu');
   });
 
   test("Login page: Log out", async ({ page }) => {

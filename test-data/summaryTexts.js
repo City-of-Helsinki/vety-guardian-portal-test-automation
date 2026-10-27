@@ -16,14 +16,14 @@ export const summaryTexts = {
     careExtent1to3Hours: 'Esiopetus ja varhaiskasvatus yhteensä enintään 5–7 tuntia',
     careExtent3to4Hours: 'Esiopetus ja varhaiskasvatus yhteensä enintään 7-8 tuntia',
     careExtent4to6Hours: 'Esiopetus ja varhaiskasvatus yhteensä enintään 8-10 tuntia',
-    careExtent61to100Hours: 'Esiopetus + Vuorohoito 61-100h/kk',
-    careExtent101to160Hours: 'Esiopetus + Vuorohoito 101-160h/kk',
-    careExtentOver160Hours: 'Esiopetus + Vuorohoito yli 160h/kk',
+    careExtent61to100Hours: 'Esiopetus 4 tuntia, jonka lisäksi 61-100 tuntia täydentävää varhaiskasvatusta vuorohoidossa.',
+    careExtent101to160Hours: 'Esiopetus 4 tuntia, jonka lisäksi 101-160 tuntia täydentävää varhaiskasvatusta vuorohoidossa.',
+    careExtentOver160Hours: 'Esiopetus 4 tuntia, jonka lisäksi yli 160 tuntia täydentävää varhaiskasvatusta vuorohoidossa.',
   },
   // Shown instead of a value when the answer is empty
   empty: '–',
   // Step 6, same as the checkbox labels
-  specialSupport: 'Lapsella on erityisen tuen tarve',
+  specialSupport: 'Lapsella on tuen tarve',
   medicationNeed: 'Lapsella on todettu vaativan lääkehoidon tarve',
   noSupport: 'Ei tuen tai lääkehoidon tarvetta',
 };
