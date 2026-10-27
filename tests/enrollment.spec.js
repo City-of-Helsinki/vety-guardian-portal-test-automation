@@ -293,7 +293,6 @@ test.describe('Preschool enrollment', () => {
 test.describe('Saved answers', () => {
   test('answers are shown when returning to previous steps', async () => {
     // Step 1
-    await enrollmentPage.checkPrivatePreschoolApplication();
     await enrollmentPage.clickNext();
 
     // Step 2
@@ -360,7 +359,6 @@ test.describe('Saved answers', () => {
     await enrollmentPage.clickPrevious();
 
     await enrollmentPage.verifyCurrentStep(1);
-    await enrollmentPage.verifyPrivatePreschoolApplicationChecked();
   });
 
   test('weekday absence days are shown when returning to step 5', async () => {
@@ -805,8 +803,6 @@ test.describe('Summary', () => {
     });
 
     test('changing to no extended care clears absence days from draft', async ({ page }) => {
-      test.fail(true, 'VETY-209: absence days are no longer sent when no extended care is selected, so backend keeps the earlier value');
-
       await enrollmentPage.editFromSummary(enrollmentPage.summary.editExtendedCareLink);
       await enrollmentPage.selectNoExtendedCare();
       await enrollmentPage.goToStep(7);

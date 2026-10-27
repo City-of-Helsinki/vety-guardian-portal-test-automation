@@ -26,7 +26,7 @@ test.describe("HKI-Vety Guardian Portal Landing Page", () => {
     });
 
     await test.step("Check landing page heading", async () => {
-      await expect(landingPage.heading).toHaveText('landing.title');
+      await expect(landingPage.heading).toHaveText('Etusivu');
     });
 
     await test.step("Check landing page header", async () => {
