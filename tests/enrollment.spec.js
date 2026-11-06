@@ -319,7 +319,7 @@ test.describe('Saved answers', () => {
     await enrollmentPage.clickNext();
 
     // Step 7
-    await enrollmentPage.fillGuardianContactInfo('guardian@example.com', '0401234567');
+    const contactInfo = await enrollmentPage.fillGuardianContactInfo('guardian@example.com', '0401234567');
     await enrollmentPage.fillOtherGuardianEmail('other@example.com');
     await enrollmentPage.fillOtherGuardianPhone('0501234567');
     await enrollmentPage.clickNext();
@@ -329,8 +329,8 @@ test.describe('Saved answers', () => {
     await enrollmentPage.clickPrevious();
 
     await enrollmentPage.verifyContactInfoStepVisible();
-    await enrollmentPage.verifyGuardianEmail('guardian@example.com');
-    await expect(enrollmentPage.guardianPhoneInput).toHaveValue('0401234567');
+    await enrollmentPage.verifyGuardianEmail(contactInfo.email);
+    await enrollmentPage.verifyGuardianPhone(contactInfo.phone);
     await enrollmentPage.verifyOtherGuardianEmail('other@example.com');
     await expect(enrollmentPage.otherGuardianPhoneInput).toHaveValue('0501234567');
     await enrollmentPage.clickPrevious();
@@ -430,7 +430,18 @@ test.describe('Contact info', () => {
     await enrollmentPage.verifyContactInfoStepVisible();
   });
 
+  // Contact info found in Helsinki-profiili is shown as text and can't be edited
+  async function skipIfGuardianEmailFromProfile() {
+    test.skip(!!(await enrollmentPage.guardianEmailFromProfile()), 'Guardian email comes from Helsinki-profiili');
+  }
+
+  async function skipIfGuardianPhoneFromProfile() {
+    test.skip(!!(await enrollmentPage.guardianPhoneFromProfile()), 'Guardian phone number comes from Helsinki-profiili');
+  }
+
   test('invalid guardian email is not accepted', async () => {
+    await skipIfGuardianEmailFromProfile();
+
     await enrollmentPage.fillGuardianEmail('abc');
     await enrollmentPage.clickNextExpectingError();
 
@@ -439,6 +450,8 @@ test.describe('Contact info', () => {
   });
 
   test('guardian email syntax is checked before saving', async ({ page }) => {
+    await skipIfGuardianEmailFromProfile();
+
     const saveRequest = page
       .waitForRequest(
         (request) => request.method() === 'PUT' && request.url().includes('/preschool-application-form/'),
@@ -454,6 +467,8 @@ test.describe('Contact info', () => {
   });
 
   test('guardian email confirmation must match', async () => {
+    await skipIfGuardianEmailFromProfile();
+
     await enrollmentPage.guardianEmailInput.fill('guardian@example.com');
     await enrollmentPage.guardianEmailConfirmInput.fill('other@example.com');
     await enrollmentPage.clickNextExpectingError();
@@ -466,6 +481,8 @@ test.describe('Contact info', () => {
   });
 
   test('invalid email does not block moving forward from previous step', async ({ page }) => {
+    await skipIfGuardianEmailFromProfile();
+
     const saveResponses = [];
     page.on('response', (response) => {
       if (response.request().method() === 'PUT' && response.url().includes('/preschool-application-form/')) {
@@ -484,6 +501,8 @@ test.describe('Contact info', () => {
   });
 
   test('matching confirmation email shows no error while typing', async ({ page }) => {
+    await skipIfGuardianEmailFromProfile();
+
     // Type like a user: email, Tab to the confirmation input, confirmation
     await enrollmentPage.guardianEmailInput.pressSequentially('guardian@example.com');
     await page.keyboard.press('Tab');
@@ -497,6 +516,8 @@ test.describe('Contact info', () => {
   });
 
   test('guardian phone number is required', async () => {
+    await skipIfGuardianPhoneFromProfile();
+
     await enrollmentPage.fillGuardianEmail('guardian@example.com');
     await enrollmentPage.clickNextExpectingError();
 
@@ -506,6 +527,8 @@ test.describe('Contact info', () => {
 
   for (const phone of ['abc', '123']) {
     test(`invalid guardian phone number "${phone}" is not accepted`, async () => {
+      await skipIfGuardianPhoneFromProfile();
+
       await enrollmentPage.fillGuardianContactInfo('guardian@example.com', phone);
       await enrollmentPage.clickNextExpectingError();
 
@@ -516,6 +539,8 @@ test.describe('Contact info', () => {
 
   for (const phone of ['0401234567', '040 123 4567', '+358401234567']) {
     test(`guardian phone number "${phone}" is accepted`, async () => {
+      await skipIfGuardianPhoneFromProfile();
+
       await enrollmentPage.fillGuardianContactInfo('guardian@example.com', phone);
       await enrollmentPage.clickNext();
 
@@ -612,7 +637,7 @@ test.describe('Summary', () => {
     await enrollmentPage.clickNext();
 
     // Step 7
-    await enrollmentPage.fillGuardianContactInfo('guardian@example.com', '0401234567');
+    const contactInfo = await enrollmentPage.fillGuardianContactInfo('guardian@example.com', '0401234567');
     await enrollmentPage.clickNext();
 
     await enrollmentPage.verifyPreviewStepVisible();
@@ -628,8 +653,8 @@ test.describe('Summary', () => {
     await expect(summary.specialSupport).toBeHidden();
     await expect(summary.medicationNeed).toBeHidden();
     await expect(enrollmentPage.summaryValue('guardianName')).toHaveText(guardian.name);
-    await expect(enrollmentPage.summaryValue('guardianEmail')).toHaveText('guardian@example.com');
-    await expect(enrollmentPage.summaryValue('guardianPhone')).toHaveText('0401234567');
+    await expect(enrollmentPage.summaryValue('guardianEmail')).toHaveText(contactInfo.email);
+    await expect(enrollmentPage.summaryValue('guardianPhone')).toHaveText(contactInfo.phone);
   });
 
   test('summary shows the answers for shift care', async () => {
@@ -681,7 +706,7 @@ test.describe('Summary', () => {
 
   test('summary shows the other guardian', async () => {
     await enrollmentPage.completeStep6();
-    await enrollmentPage.fillGuardianContactInfo('guardian@example.com', '0401234567');
+    const contactInfo = await enrollmentPage.fillGuardianContactInfo('guardian@example.com', '0401234567');
     await enrollmentPage.fillOtherGuardianEmail('other@example.com');
     await enrollmentPage.fillOtherGuardianPhone('0501234567');
     await enrollmentPage.clickNext();
@@ -691,7 +716,7 @@ test.describe('Summary', () => {
     await expect(enrollmentPage.summaryValue('otherGuardianName')).toHaveText(otherGuardian.name);
     await expect(enrollmentPage.summaryValue('otherGuardianEmail')).toHaveText('other@example.com');
     await expect(enrollmentPage.summaryValue('otherGuardianPhone')).toHaveText('0501234567');
-    await expect(enrollmentPage.summaryValue('guardianEmail')).toHaveText('guardian@example.com');
+    await expect(enrollmentPage.summaryValue('guardianEmail')).toHaveText(contactInfo.email);
   });
 
   const supportCases = [
@@ -828,10 +853,10 @@ test.describe('Summary', () => {
 });
 
 test.describe('Preview and sending', () => {
-  const guardianEmail = 'guardian@example.com';
+  let guardianEmail;
 
   test.beforeEach(async () => {
-    await enrollmentPage.completeStep7(guardianEmail);
+    ({ email: guardianEmail } = await enrollmentPage.completeStep7('guardian@example.com'));
     await enrollmentPage.verifyPreviewStepVisible();
   });
 

@@ -135,12 +135,16 @@ export class PreschoolEnrollmentPage {
     // Guardian's phone number is required, other guardian's is optional
     this.guardianPhoneInput = page.getByTestId('input-h1-puhelinnumero');
     this.otherGuardianPhoneInput = page.getByTestId('input-h2-puhelinnumero');
+    // Guardian's email and phone number found in Helsinki-profiili are shown as text instead of inputs
+    this.guardianProfileEmail = page.getByTestId('h1-sahkoposti-value');
+    this.guardianProfilePhone = page.getByTestId('h1-puhelinnumero-value');
 
     // Step 8 - Esikatselu ja lähetys
 
     this.previewHeading = page.getByTestId('step-esikatselu-title');
 
     this.sendApplicationButton = page.getByTestId('btn-submit');
+    this.sendConfirmButton = page.getByTestId('btn-submit-confirm');
 
     // Shown on the preview when the application has already been sent
     this.alreadySubmittedNotice = page.getByTestId('notification-already-submitted');
@@ -465,9 +469,29 @@ export class PreschoolEnrollmentPage {
     await expect(this.contactInfoHeading).toBeVisible();
   }
 
+  // Returns the guardian's email from Helsinki-profiili, or null if the guardian enters it
+  async guardianEmailFromProfile() {
+    return this.profileValue(this.guardianEmailInput, this.guardianProfileEmail);
+  }
+
+  // Returns the guardian's phone number from Helsinki-profiili, or null if the guardian enters it
+  async guardianPhoneFromProfile() {
+    return this.profileValue(this.guardianPhoneInput, this.guardianProfilePhone);
+  }
+
+  async profileValue(input, profileValue) {
+    await input.or(profileValue).first().waitFor();
+    return (await profileValue.isVisible()) ? profileValue.innerText() : null;
+  }
+
+  // Skipped if the email comes from Helsinki-profiili. Returns the email in use.
   async fillGuardianEmail(email) {
+    const profileEmail = await this.guardianEmailFromProfile();
+    if (profileEmail) return profileEmail;
+
     await this.guardianEmailInput.fill(email);
     await this.guardianEmailConfirmInput.fill(email);
+    return email;
   }
 
   async fillOtherGuardianEmail(email) {
@@ -475,23 +499,43 @@ export class PreschoolEnrollmentPage {
     await this.otherGuardianEmailConfirmInput.fill(email);
   }
 
+  // Skipped if the phone number comes from Helsinki-profiili. Returns the phone number in use.
   async fillGuardianPhone(phone) {
+    const profilePhone = await this.guardianPhoneFromProfile();
+    if (profilePhone) return profilePhone;
+
     await this.guardianPhoneInput.fill(phone);
+    return phone;
   }
 
   async fillOtherGuardianPhone(phone) {
     await this.otherGuardianPhoneInput.fill(phone);
   }
 
-  // Fills the required contact info of the guardian
+  // Fills the required contact info of the guardian, except what comes from Helsinki-profiili.
+  // Returns the email and phone number in use.
   async fillGuardianContactInfo(email = 'test@example.com', phone = '0401234567') {
-    await this.fillGuardianEmail(email);
-    await this.fillGuardianPhone(phone);
+    return {
+      email: await this.fillGuardianEmail(email),
+      phone: await this.fillGuardianPhone(phone),
+    };
   }
 
   async verifyGuardianEmail(email) {
+    if (await this.guardianEmailFromProfile()) {
+      await expect(this.guardianProfileEmail).toHaveText(email);
+      return;
+    }
     await expect(this.guardianEmailInput).toHaveValue(email);
     await expect(this.guardianEmailConfirmInput).toHaveValue(email);
+  }
+
+  async verifyGuardianPhone(phone) {
+    if (await this.guardianPhoneFromProfile()) {
+      await expect(this.guardianProfilePhone).toHaveText(phone);
+      return;
+    }
+    await expect(this.guardianPhoneInput).toHaveValue(phone);
   }
 
   async verifyOtherGuardianEmail(email) {
@@ -545,8 +589,10 @@ export class PreschoolEnrollmentPage {
     await this.verifyPreviewStepVisible();
   }
 
+  // Sending opens a confirmation dialog
   async sendApplication() {
     await this.sendApplicationButton.click();
+    await this.sendConfirmButton.click();
   }
 
   // Step helpers ///////////////////////////////////////////////
@@ -598,8 +644,9 @@ export class PreschoolEnrollmentPage {
   async completeStep7(guardianEmail = 'test@example.com', guardianPhone = '0401234567') {
     await this.completeStep6();
 
-    await this.fillGuardianContactInfo(guardianEmail, guardianPhone);
+    const contactInfo = await this.fillGuardianContactInfo(guardianEmail, guardianPhone);
     await this.clickNext();
+    return contactInfo;
   }
 
   async openStep(stepNumber) {
