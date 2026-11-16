@@ -24,6 +24,10 @@ test.describe("HKI-Vety Guardian Portal Login Page", () => {
       await expect(new LoginPage(page).heading).toHaveText(loginPage.heading.fi);
     });
 
+    await test.step("Check login page text", async () => {
+      await expect(new LoginPage(page).infoText).toContainText(loginPage.text.fi);
+    });
+
     await test.step("Check login button", async () => {
       await expect(new LoginPage(page).loginButton).toBeVisible();
     });
@@ -45,9 +49,11 @@ test.describe("HKI-Vety Guardian Portal Login Page", () => {
       await languageSelector.select('en');
       await languageSelector.expectCurrentLanguage('en');
       await expect(new LoginPage(page).heading).toHaveText(loginPage.heading.en);
+      await expect(new LoginPage(page).infoText).toContainText(loginPage.text.en);
       await languageSelector.select('sv');
       await languageSelector.expectCurrentLanguage('sv');
       await expect(new LoginPage(page).heading).toHaveText(loginPage.heading.sv);
+      await expect(new LoginPage(page).infoText).toContainText(loginPage.text.sv);
       await languageSelector.select('fi');
       await languageSelector.expectCurrentLanguage('fi');
       await expect(new LoginPage(page).heading).toHaveText(loginPage.heading.fi);

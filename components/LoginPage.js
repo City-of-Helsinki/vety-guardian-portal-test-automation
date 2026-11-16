@@ -12,6 +12,7 @@ export class LoginPage {
     this.page = page;
 
     this.heading = page.getByTestId('title-home');
+    this.infoText = page.getByTestId('etusivu-text');
     this.loginButton = page.getByTestId('btn-login');
 
     // Header
