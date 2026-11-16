@@ -182,7 +182,8 @@ test.describe('Preschool enrollment', () => {
       await enrollmentPage.verifyShiftCareExtentSelected(extent);
     }
 
-    await enrollmentPage.setWeekdayAbsenceDays(3);
+    // Weekday absence days are asked only for daytime care
+    await enrollmentPage.verifyWeekdayAbsenceDaysHidden();
     await enrollmentPage.clickNext();
     await enrollmentPage.verifySupportNeedsStepVisible();
   });
@@ -191,12 +192,14 @@ test.describe('Preschool enrollment', () => {
     await enrollmentPage.completeStep4();
 
     await enrollmentPage.verifyDaytimeCareExtentsVisible();
+    await expect(enrollmentPage.step5.weekdayAbsenceDaysInput).toBeVisible();
     await enrollmentPage.clickPrevious();
 
     await enrollmentPage.selectShiftCare();
     await enrollmentPage.clickNext();
 
     await enrollmentPage.verifyShiftCareExtentsVisible();
+    await enrollmentPage.verifyWeekdayAbsenceDaysHidden();
   });
 
   test('no extended care skips steps 4 and 5', async () => {
@@ -308,9 +311,8 @@ test.describe('Saved answers', () => {
     await enrollmentPage.selectShiftCare();
     await enrollmentPage.clickNext();
 
-    // Step 5
+    // Step 5: no weekday absence days for shift care
     await enrollmentPage.selectShiftCareExtent('careExtent101to160Hours');
-    await enrollmentPage.setWeekdayAbsenceDays(3);
     await enrollmentPage.clickNext();
 
     // Step 6
@@ -342,7 +344,7 @@ test.describe('Saved answers', () => {
 
     await enrollmentPage.verifyCareExtentStepVisible();
     await enrollmentPage.verifyShiftCareExtentSelected('careExtent101to160Hours');
-    await enrollmentPage.verifyWeekdayAbsenceDays(3);
+    await enrollmentPage.verifyWeekdayAbsenceDaysHidden();
     await enrollmentPage.clickPrevious();
 
     await enrollmentPage.verifyStartAndCareNeedStepVisible();
@@ -386,6 +388,21 @@ test.describe('Saved answers', () => {
 
     const application = await getApplication(page, enrollmentPage.applicationId());
     expect(application.arkipoissaolotLkm).toBe(3);
+  });
+
+  test('weekday absence days are cleared from draft when changing to shift care', async ({ page }) => {
+    await enrollmentPage.completeStep5();
+    expect((await getApplication(page, enrollmentPage.applicationId())).arkipoissaolotLkm).toBe(2);
+
+    await enrollmentPage.goToStep(4);
+    await enrollmentPage.selectShiftCare();
+    await enrollmentPage.clickNext();
+    await enrollmentPage.selectShiftCareExtent('careExtent61to100Hours');
+    await enrollmentPage.clickNext();
+    await enrollmentPage.verifySupportNeedsStepVisible();
+
+    const application = await getApplication(page, enrollmentPage.applicationId());
+    expect(application.arkipoissaolotLkm).toBeNull();
   });
 
   test('weekday absence days default is 0', async () => {
@@ -665,9 +682,8 @@ test.describe('Summary', () => {
     await enrollmentPage.selectShiftCare();
     await enrollmentPage.clickNext();
 
-    // Step 5
+    // Step 5: no weekday absence days for shift care
     await enrollmentPage.selectShiftCareExtent('careExtentOver160Hours');
-    await enrollmentPage.setWeekdayAbsenceDays(4);
     await enrollmentPage.clickNext();
 
     // Steps 6 and 7
@@ -682,7 +698,7 @@ test.describe('Summary', () => {
       summaryTexts.careType.shiftCare,
       summaryTexts.careExtent.careExtentOver160Hours,
     ]);
-    await expect(enrollmentPage.summaryValue('absenceDays')).toHaveText('4');
+    await expect(enrollmentPage.summaryValue('absenceDays')).toBeHidden();
   });
 
   test('summary shows no extended care', async () => {
@@ -873,21 +889,39 @@ test.describe('Preview and sending', () => {
     await expect(enrollmentPage.summaryValue('guardianEmail')).toHaveText(guardianEmail);
   });
 
-  test('sending application returns to landing page', async ({ page }) => {
+  test('sending application shows sent dialog and returns to landing page', async ({ page }) => {
     const applicationId = enrollmentPage.applicationId();
 
     await enrollmentPage.sendApplication();
 
-    await landingPage.verifyPageLoaded();
+    // Sent dialog replaces the confirmation
+    await expect(enrollmentPage.sendDialogText).toHaveText(summaryTexts.sent);
+    await expect(enrollmentPage.sendConfirmButton).toBeHidden();
+    await expect(enrollmentPage.sendCancelButton).toBeHidden();
 
     const application = await getApplication(page, applicationId);
     expect(application.status).toBe('submitted');
+
+    await enrollmentPage.closeSentDialog();
+    await landingPage.verifyPageLoaded();
+  });
+
+  test('cancelling the send confirmation keeps the application as draft', async ({ page }) => {
+    await enrollmentPage.sendApplicationButton.click();
+    await enrollmentPage.sendCancelButton.click();
+
+    await expect(enrollmentPage.sendDialog).toBeHidden();
+    await enrollmentPage.verifyPreviewStepVisible();
+
+    const application = await getApplication(page, enrollmentPage.applicationId());
+    expect(application.status).toBe('draft');
   });
 
   test('sent application shows only notice and summary', async () => {
     const applicationId = enrollmentPage.applicationId();
 
     await enrollmentPage.sendApplication();
+    await enrollmentPage.closeSentDialog();
     await landingPage.verifyPageLoaded();
 
     await landingPage.openApplication(child);

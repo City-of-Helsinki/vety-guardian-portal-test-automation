@@ -101,7 +101,7 @@ export class PreschoolEnrollmentPage {
         ),
       },
 
-      // Same for both care types
+      // Only for daytime care: not shown when shift care is selected on step 4
       weekdayAbsenceDaysInput: page.getByTestId(
         'input-arki-poissaolot'
       ),
@@ -144,7 +144,12 @@ export class PreschoolEnrollmentPage {
     this.previewHeading = page.getByTestId('step-esikatselu-title');
 
     this.sendApplicationButton = page.getByTestId('btn-submit');
+    // Sending opens a dialog: first it asks to confirm, then it tells the application was sent
+    this.sendDialog = page.locator('#submit-confirm-dialog');
+    this.sendDialogText = page.locator('#submit-confirm-dialog-description');
     this.sendConfirmButton = page.getByTestId('btn-submit-confirm');
+    this.sendCancelButton = page.getByTestId('btn-submit-cancel');
+    this.sentCloseButton = page.getByTestId('btn-submit-sent-close');
 
     // Shown on the preview when the application has already been sent
     this.alreadySubmittedNotice = page.getByTestId('notification-already-submitted');
@@ -181,6 +186,7 @@ export class PreschoolEnrollmentPage {
       guardianName: 'h1-nimi',
       guardianAddress: 'h1-osoite',
       guardianPhone: 'h1-puhelinnumero',
+      // Not shown for shift care
       absenceDays: 'arkipoissaolot',
       guardianEmail: 'h1-sahkoposti',
       otherGuardianName: 'h2-nimi',
@@ -369,6 +375,10 @@ export class PreschoolEnrollmentPage {
 
   async verifyWeekdayAbsenceDays(days) {
     await expect(this.step5.weekdayAbsenceDaysInput).toHaveValue(String(days));
+  }
+
+  async verifyWeekdayAbsenceDaysHidden() {
+    await expect(this.step5.weekdayAbsenceDaysInput).toBeHidden();
   }
 
   async increaseWeekdayAbsenceDays() {
@@ -589,10 +599,18 @@ export class PreschoolEnrollmentPage {
     await this.verifyPreviewStepVisible();
   }
 
-  // Sending opens a confirmation dialog
+  // Sending opens a confirmation dialog. After confirming, the same dialog
+  // tells that the application was sent.
   async sendApplication() {
     await this.sendApplicationButton.click();
     await this.sendConfirmButton.click();
+    await expect(this.sentCloseButton, 'Dialog should tell the application was sent').toBeVisible();
+  }
+
+  // Closes the dialog shown after sending. Opens the landing page.
+  async closeSentDialog() {
+    await this.sentCloseButton.click();
+    await expect(this.sendDialog).toBeHidden();
   }
 
   // Step helpers ///////////////////////////////////////////////
