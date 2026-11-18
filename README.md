@@ -11,7 +11,16 @@ Playwright end-to-end tests for the Vety guardian portal — covering login, the
 
 ## Login
 
-The tests log in like a user: Helsinki-profiili with the suomi.fi test identification (Testitunnistaja). The test users are in `test-data/users.js`: a family from DVV's test data (mother `140904A998H`, father `060999-951B`, and their child), which the backend's VTJ mock also has.
+The tests log in like a user: Helsinki-profiili with the suomi.fi test identification (Testitunnistaja). The test users are in `test-data/users.js`: people from DVV's test data, which the backend's VTJ mock also has (see the backend's README, "Login test users"):
+
+| User | Henkilötunnus | Used for |
+|------|---------------|----------|
+| `mother`, `father` | `140904A998H`, `060999-951B` | Two guardians of the same child. Most of the enrollment tests |
+| `singleParent` | `150299-902X` | The only guardian of the child: no other guardian on the form (`tests/singleParent.spec.js`) |
+| `guardianWithTurvakielto` | `200798-9981` | The guardian has turvakielto, the child doesn't: no application |
+| `guardianOfChildWithTurvakielto` | `010503A9503` | The child has turvakielto, the guardian doesn't: no application |
+
+A new test user's first login asks Helsinki-profiili for an email address and a confirmation code (see the backend's README).
 
 - `tests/auth.setup.js` runs first (`setup` project). It logs in each test user once through suomi.fi and saves the Helsinki-profiili session cookies to `playwright/.auth/` (not committed).
 - `LoginPage.loginAs(user)` uses the saved session, so the tests only click "Kirjaudu sisään" and skip suomi.fi. If the backend rejects the login ("Tunnistautuminen epäonnistui"), it reloads the page once.
@@ -62,6 +71,7 @@ npx playwright test --no-deps tests/landing.spec.js
 # Single spec file
 npx playwright test tests/enrollment.spec.js
 npx playwright test tests/landing.spec.js
+npx playwright test tests/singleParent.spec.js
 ```
 
 ### Enrollment Tests

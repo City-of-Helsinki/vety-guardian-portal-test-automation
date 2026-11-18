@@ -2,22 +2,47 @@ import { expect } from '@playwright/test';
 
 const apiUrl = process.env.API_URL || 'http://localhost:8001';
 
-// Returns the application (draft or submitted) as saved in backend.
 // The API needs the logged-in user's token, which the app keeps in
 // sessionStorage, so read it from the page.
-export async function getApplication(page, applicationId) {
+async function authHeaders(page) {
   const token = await page.evaluate(
     () => JSON.parse(sessionStorage.getItem('hds_login_api_token_storage_key') || '{}')['vety-api-dev']
   );
   expect(token, 'Logged-in user should have an API token').toBeTruthy();
 
+  return { Authorization: `Bearer ${token}` };
+}
+
+// Returns the application (draft or submitted) as saved in backend.
+export async function getApplication(page, applicationId) {
   const response = await page.request.get(
     `${apiUrl}/preschool-application-form/${applicationId}/`,
-    { headers: { Authorization: `Bearer ${token}` } }
+    { headers: await authHeaders(page) }
   );
   await expect(response).toBeOK();
 
   return response.json();
+}
+
+// Returns the logged-in guardian's children as saved in backend by the VTJ
+// sync, which runs when the landing page opens.
+export async function getDependants(page) {
+  const response = await page.request.get(`${apiUrl}/vtj/dependants/`, {
+    headers: await authHeaders(page),
+  });
+  await expect(response).toBeOK();
+
+  return (await response.json()).dependants;
+}
+
+// Asks backend for the child's application like the landing page does
+// (returns the existing one or creates a draft). Returns the response, so the
+// test can check a refusal.
+export async function requestApplicationForDependant(page, dependantId) {
+  return page.request.post(
+    `${apiUrl}/preschool-application-form/for-dependant/${dependantId}/`,
+    { headers: await authHeaders(page) }
+  );
 }
 
 // The backend's test-data API (/test-data/) needs TEST_DATA_API_ENABLED=True and
