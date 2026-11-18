@@ -10,7 +10,7 @@ export class LandingPage {
     this.children = page.getByTestId(/^dependant-\d+$/);
     this.childNames = page.getByTestId(/^dependant-name-\d+$/);
 
-    // Shown for a guardian with turvakielto
+    // Shown when anyone in the family (guardian, child or other guardian) has turvakielto
     this.securityNotification = page.getByTestId('notification-turvakielto');
     this.noChildrenText = page.getByTestId('text-no-dependants');
   }
@@ -32,9 +32,14 @@ export class LandingPage {
     });
   }
 
+  // Button that opens (or creates) the child's application
+  applicationButton(childName) {
+    return this.child(childName).getByTestId(/^btn-open-application-\d+$/);
+  }
+
   // Opens (or creates) the child's application: /application/<application id>
   async openApplication(childName) {
-    await this.child(childName).getByTestId(/^btn-open-application-\d+$/).click();
+    await this.applicationButton(childName).click();
     await expect(this.page).toHaveURL(/\/application\/[^/]+$/);
   }
 
@@ -53,5 +58,16 @@ export class LandingPage {
 
   async expectSecurityNotificationVisible() {
     await expect(this.securityNotification).toBeVisible();
+  }
+
+  async expectSecurityNotificationHidden() {
+    await expect(this.securityNotification).toBeHidden();
+  }
+
+  // With turvakielto in the family, the child is listed without the application card
+  async expectNoApplication(childName) {
+    await expect(this.child(childName)).toBeVisible();
+    await expect(this.child(childName).getByTestId(/^dependant-application-title-\d+$/)).toBeHidden();
+    await expect(this.applicationButton(childName)).toBeHidden();
   }
 }

@@ -128,6 +128,10 @@ export class PreschoolEnrollmentPage {
 
     this.contactInfoHeading = page.getByTestId('step-yhteystiedot-title');
 
+    this.guardianContactInfo = page.getByTestId('fieldset-h1-yhteystiedot');
+    // Shown only when the child has another guardian
+    this.otherGuardianContactInfo = page.getByTestId('fieldset-h2-yhteystiedot');
+
     this.guardianEmailInput = page.getByTestId('input-h1-sahkoposti');
     this.guardianEmailConfirmInput = page.getByTestId('input-h1-sahkoposti-confirm');
     this.otherGuardianEmailInput = page.getByTestId('input-h2-sahkoposti');
