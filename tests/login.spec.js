@@ -80,8 +80,8 @@ test.describe("HKI-Vety Guardian Portal Login Page", () => {
   });
 
   test("Login page: Check header", async ({ page }) => {
-    await test.step("Check header text", async () => {
-      await expect(page.getByRole('link', { name: 'test' })).toBeVisible();
+    await test.step("Check header home link", async () => {
+      await expect(page.getByRole('banner').locator('a[href="/"]')).toBeVisible();
     });
   });
 });
