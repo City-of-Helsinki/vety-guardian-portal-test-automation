@@ -31,7 +31,7 @@ test.describe("HKI-Vety Guardian Portal Landing Page", () => {
     });
 
     await test.step("Check landing page header", async () => {
-      await expect(page.getByRole('link', { name: 'test' })).toBeVisible();
+      await expect(page.getByRole('banner').locator('a[href="/"]')).toBeVisible();
     });
     
     await test.step("Check landing page language selector", async () => {
