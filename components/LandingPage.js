@@ -64,7 +64,13 @@ export class LandingPage {
     await expect(this.securityNotification).toBeHidden();
   }
 
-  // With turvakielto in the family, the child is listed without the application card
+  // Shown on the card of a child of preschool age whose home municipality isn't Helsinki
+  notResidentHelsinkiNotification(childName) {
+    return this.child(childName).getByTestId(/^notification-not-resident-helsinki-\d+$/);
+  }
+
+  // With turvakielto in the family, or when the child can't apply (age or home
+  // municipality), the child is listed without the application card
   async expectNoApplication(childName) {
     await expect(this.child(childName)).toBeVisible();
     await expect(this.child(childName).getByTestId(/^dependant-application-title-\d+$/)).toBeHidden();
