@@ -43,15 +43,11 @@ export default defineConfig({
 
   /* Configure projects for major browsers */
   projects: [
-    // Logs in the test users once and saves their sessions (tests/auth.setup.js)
-    {
-      name: 'setup',
-      testMatch: /.*\.setup\.js/,
-    },
+    // No login setup: LoginPage.loginAs() identifies a user with suomi.fi on
+    // their first login and saves the session for the next ones
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
-      dependencies: ['setup'],
     },
 
     // {
