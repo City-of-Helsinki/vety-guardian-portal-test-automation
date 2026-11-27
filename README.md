@@ -15,15 +15,18 @@ The tests log in like a user: Helsinki-profiili with the suomi.fi test identific
 
 | User | Henkilötunnus | Used for |
 |------|---------------|----------|
-| `mother`, `father` | `140904A998H`, `060999-951B` | Two guardians of the same child. Most of the enrollment tests |
+| `mother`, `father` | `010878-998D`, `181077-999S` | Two guardians of the same child (of preschool age). Most of the enrollment tests |
 | `singleParent` | `150299-902X` | The only guardian of the child: no other guardian on the form (`tests/singleParent.spec.js`) |
 | `guardianWithTurvakielto` | `200798-9981` | The guardian has turvakielto, the child doesn't: no application |
 | `guardianOfChildWithTurvakielto` | `010503A9503` | The child has turvakielto, the guardian doesn't: no application |
+| `guardianOfChildNotOfPreschoolAge` | `140904A998H` | The child isn't of preschool age: no application |
+| `guardianOutsideHelsinki` | `030393-995E` | The child's home municipality is Espoo: no application. The VTJ mock maps the login to its own family |
 
 A new test user's first login asks Helsinki-profiili for an email address and a confirmation code (see the backend's README).
 
-- `tests/auth.setup.js` runs first (`setup` project). It logs in each test user once through suomi.fi and saves the Helsinki-profiili session cookies to `playwright/.auth/` (not committed).
-- `LoginPage.loginAs(user)` uses the saved session, so the tests only click "Kirjaudu sisään" and skip suomi.fi. If the backend rejects the login ("Tunnistautuminen epäonnistui"), it reloads the page once.
+- `LoginPage.loginAs(user)` identifies the user with suomi.fi on their first login and saves the Helsinki-profiili session cookies to `playwright/.auth/` (not committed). The next logins use the saved session, so the tests only click "Kirjaudu sisään" and skip suomi.fi. When the saved session has expired, it identifies with suomi.fi again and saves the new session.
+- The users are logged in through suomi.fi when they are first needed, not all at the start, so the suomi.fi test service doesn't get many logins at once.
+- If the backend rejects the login ("Tunnistautuminen epäonnistui"), it reloads the page once.
 
 > **Note:** Before every test, the enrollment tests delete the test guardian's preschool applications (drafts and sent ones) from the local backend with the test-data API (`POST /test-data/delete/`). `clearPreschoolApplications()` in `utils/api.js` deletes all applications (`POST /test-data/delete-all/`).
 
@@ -64,9 +67,6 @@ npx playwright test -g "Preschool enrollment"
 
 # Single test
 npx playwright test -g "answers are shown when returning to previous steps"
-
-# Without the login setup, using the sessions saved by an earlier run
-npx playwright test --no-deps tests/landing.spec.js
 
 # Single spec file
 npx playwright test tests/enrollment.spec.js
@@ -116,4 +116,4 @@ After a run, results are available in `playwright-report/`:
 | `utils/` | Helpers (api, ...) |
 | `scripts/` | Command-line scripts run with `npm run` |
 | `playwright.config.js` | Playwright configuration |
-| `playwright/.auth/` | Saved login sessions (created by `tests/auth.setup.js`, not committed) |
+| `playwright/.auth/` | Saved login sessions (created by `LoginPage.loginAs()`, not committed) |
